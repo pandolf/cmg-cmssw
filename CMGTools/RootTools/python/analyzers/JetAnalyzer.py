@@ -210,8 +210,16 @@ class JetAnalyzer( Analyzer ):
         jet.scaleEnergy(totalScale)
 
     def testJetID(self, jet):
+<<<<<<< HEAD
         jet.puJetIdPassed = jet.puJetId(wp53x=True)
         jet.pfJetIdPassed = jet.jetID("POG_PFID_Loose")
+=======
+        if self.is2012:
+            jet.puJetIdPassed = jet.puJetId(wp53x=True)
+        else:
+            jet.puJetIdPassed = jet.puJetId(wp53x=False, use2011=True)
+        jet.pfJetIdPassed = jet.looseJetId()
+>>>>>>> cmg-cmssw/CMG_PAT_from-CMSSW_5_3_12_patch1
 
         if self.cfg_ana.relaxJetId:
             return True
