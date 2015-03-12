@@ -278,5 +278,6 @@ setattr(PhotonAnalyzer,"defaultConfig",cfg.Analyzer(
     etaMax = 2.5,
     gammaID = "PhotonCutBasedIDLoose",
     do_mc_match = True,
+    do_randomCone = False,
   )
 )
