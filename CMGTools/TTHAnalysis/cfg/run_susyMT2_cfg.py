@@ -56,6 +56,7 @@ tauAna.tauAntiElectronID = "againstElectronLoose"
 # Photon
 photonAna.etaCentral = 2.5
 photonAna.gammaID = "PhotonCutBasedIDLoose_CSA14"
+photonAna.do_randomCone = True
 
 # Isolated Track
 isoTrackAna.setOff=False
