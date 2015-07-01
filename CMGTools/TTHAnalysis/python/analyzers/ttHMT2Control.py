@@ -70,6 +70,7 @@ class ttHMT2Control( Analyzer ):
         gamma_objects30 = [ j for j in event.gamma_cleanJets if j.pt() > 30 ] + event.selectedLeptons
         gamma_objects40  = [ j for j in event.gamma_cleanJets if j.pt() > 40 and abs(j.eta()) < 2.5 ] + [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
         # for the gamma + jets variables we use do not take care about the leptons, we consider jets that do not overlap with the first jets
+        gamma_objects30j = [ j for j in event.gamma_cleanJets if j.pt() > 30 and abs(j.eta()) < 2.5 ]
         gamma_objects40j = [ j for j in event.gamma_cleanJets if j.pt() > 40 and abs(j.eta()) < 2.5 ]
         gamma_objects40ja = [ j for j in event.gamma_cleanJetsAll if j.pt() > 40 ]
 
@@ -82,6 +83,11 @@ class ttHMT2Control( Analyzer ):
         event.gamma_mhtJet30vec = ROOT.reco.Particle.LorentzVector(-1.*(sum([x.px() for x in gamma_objects30])) , -1.*(sum([x.py() for x in gamma_objects30])), 0, 0 )
         event.gamma_mhtJet30 = event.mhtJet30vec.pt()
         event.gamma_mhtPhiJet30 = event.mhtJet30vec.phi()
+
+        event.gamma_htJet30j = sum([x.pt() for x in gamma_objects30j])
+        event.gamma_mhtJet30jvec = ROOT.reco.Particle.LorentzVector(-1.*(sum([x.px() for x in gamma_objects30j])) , -1.*(sum([x.py() for x in gamma_objects30j])), 0, 0 )
+        event.gamma_mhtJet30j = event.gamma_mhtJet30jvec.pt()
+        event.gamma_mhtPhiJet30j = event.gamma_mhtJet30jvec.phi()
 
         event.gamma_htJet40 = sum([x.pt() for x in gamma_objects40])
         event.gamma_mhtJet40vec = ROOT.reco.Particle.LorentzVector(-1.*(sum([x.px() for x in gamma_objects40])) , -1.*(sum([x.py() for x in gamma_objects40])), 0, 0 )

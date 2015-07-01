@@ -10,9 +10,12 @@ susyFullHad_globalVariables = susyCore_globalVariables + [
     ##--------------------------------------------------
     ## energy sums
     ##--------------------------------------------------
-    NTupleVariable("ht", lambda ev : ev.htJet40j10l5t, help="H_{T} computed from jets (with |eta|<2.5, pt > 40 GeV) and leptons (electrons and muons with |eta|<2.5, pt > 10 GeV)"),
-    NTupleVariable("mht_pt", lambda ev : ev.mhtJet40j10l5t, help="H_{T}^{miss} computed from jets (with |eta|<2.5, pt > 40 GeV) and leptons (electrons ans muons with |eta|<2.5, pt > 10 GeV)"),
-    NTupleVariable("mht_phi", lambda ev : ev.mhtPhiJet40j10l5t, help="H_{T}^{miss} #phi computed from jets (with |eta|<2.5, pt > 40 GeV) and leptons (electrons ans muons with |eta|<2.5, pt > 10 GeV)"),
+    #NTupleVariable("ht", lambda ev : ev.htJet40j10l5t, help="H_{T} computed from jets (with |eta|<2.5, pt > 40 GeV) and leptons (electrons and muons with |eta|<2.5, pt > 10 GeV)"),
+    #NTupleVariable("mht_pt", lambda ev : ev.mhtJet40j10l5t, help="H_{T}^{miss} computed from jets (with |eta|<2.5, pt > 40 GeV) and leptons (electrons ans muons with |eta|<2.5, pt > 10 GeV)"),
+    #NTupleVariable("mht_phi", lambda ev : ev.mhtPhiJet40j10l5t, help="H_{T}^{miss} #phi computed from jets (with |eta|<2.5, pt > 40 GeV) and leptons (electrons ans muons with |eta|<2.5, pt > 10 GeV)"),
+    NTupleVariable("ht", lambda ev : ev.htJet30j10l5t, help="H_{T} computed from jets (with |eta|<2.5, pt > 30 GeV) and leptons (electrons and muons with |eta|<2.5, pt > 10 GeV)"),
+    NTupleVariable("mht_pt", lambda ev : ev.mhtJet30j10l5t, help="H_{T}^{miss} computed from jets (with |eta|<2.5, pt > 30 GeV) and leptons (electrons ans muons with |eta|<2.5, pt > 10 GeV)"),
+    NTupleVariable("mht_phi", lambda ev : ev.mhtPhiJet30j10l5t, help="H_{T}^{miss} #phi computed from jets (with |eta|<2.5, pt > 30 GeV) and leptons (electrons ans muons with |eta|<2.5, pt > 10 GeV)"),
     NTupleVariable("diffMetMht", lambda ev : ev.diffMetMht, help="abs( vec(mht) - vec(met) ) - with jets and leptons"),
     NTupleVariable("deltaPhiMin", lambda ev : ev.deltaPhiMin, help="minimal deltaPhi between the MET and the four leading jets with pt>40 and eta<2.4 and leptons (electrons ans muons with |eta|<2.5, pt > 10 GeV)"),
     NTupleVariable("jet1_pt", lambda ev : ev.cleanJets[0].pt() if len(ev.cleanJets)>0 else -99, help="pt of leading central jet"),
@@ -80,10 +83,12 @@ susyFullHad_globalVariables = susyCore_globalVariables + [
     # Gamma variables
     ##--------------------------------------------------
     NTupleVariable("gamma_nJet40", lambda ev: sum([j.pt() > 40 for j in ev.gamma_cleanJets]), int, help="Number of jets after photon-cleaning with pt > 40, |eta|<2.4"),
+    NTupleVariable("gamma_nJet30", lambda ev: sum([j.pt() > 30 for j in ev.gamma_cleanJets]), int, help="Number of jets after photon-cleaning with pt > 30, |eta|<2.4"),
     NTupleVariable("gamma_nBJet20", lambda ev: sum([j.btagWP("CSVv2IVFM") for j in ev.gamma_cleanJets if j.pt() > 20]), int, help="Number jets after photon-cleaning  with pt > 20 passing CSV medium"),
     NTupleVariable("gamma_nBJet40", lambda ev: sum([j.btagWP("CSVv2IVFM") for j in ev.gamma_cleanJets if j.pt() > 40]), int, help="Number jets after photon-cleaning  with pt > 40 passing CSV medium"),
     NTupleVariable("gamma_nBJet25", lambda ev: sum([j.btagWP("CSVv2IVFM") for j in ev.gamma_cleanJets if j.pt() > 25]), int, help="Number jets after photon-cleaning  with pt > 25 passing CSV medium"),
-    NTupleVariable("gamma_ht", lambda ev : ev.gamma_htJet40j, help="H_{T} computed from only jets (with |eta|<2.5, pt > 40 GeV)"),
+    NTupleVariable("gamma_ht", lambda ev : ev.gamma_htJet30j, help="H_{T} computed from only jets (with |eta|<2.5, pt > 40 GeV)"),
+    #NTupleVariable("gamma_ht", lambda ev : ev.gamma_htJet40j, help="H_{T} computed from only jets (with |eta|<2.5, pt > 40 GeV)"),
     NTupleVariable("gamma_deltaPhiMin", lambda ev : ev.gamma_deltaPhiMin_had, help="minimal deltaPhi between the MET and the four leading jets with pt>40 and eta<2.4"),
     NTupleVariable("gamma_diffMetMht", lambda ev : ev.gamma_diffMetMht_had, help="abs( vec(mht) - vec(met) )"),
     NTupleVariable("gamma_mht_pt", lambda ev : ev.gamma_mhtJet40j, help="H_{T}^{miss} computed from jets (with |eta|<2.5, pt > 40 GeV) and leptons (electrons ans muons with |eta|<2.5, pt > 10 GeV)"),

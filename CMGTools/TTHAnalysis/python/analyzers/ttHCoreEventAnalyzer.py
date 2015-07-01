@@ -173,6 +173,11 @@ class ttHCoreEventAnalyzer( Analyzer ):
             objects40j10l5t = [ j for j in event.cleanJets if j.pt() > 40 ] + [ l for l in event.selectedLeptons if l.pt() > 10 ] + [ t for t in event.selectedIsoCleanTrack ]
             objects40j10l5t.sort(key = lambda obj : obj.pt(), reverse = True)
 
+        objects30j10l5t = []
+        if hasattr(event, 'selectedIsoCleanTrack'):
+            objects30j10l5t = [ j for j in event.cleanJets if j.pt() > 30 ] + [ l for l in event.selectedLeptons if l.pt() > 10 ] + [ t for t in event.selectedIsoCleanTrack ]
+            objects30j10l5t.sort(key = lambda obj : obj.pt(), reverse = True)
+
         event.htJet25 = sum([x.pt() for x in objects25])
         event.mhtJet25vec = ROOT.reco.Particle.LorentzVector(-1.*(sum([x.px() for x in objects25])) , -1.*(sum([x.py() for x in objects25])), 0, 0 )     
         event.mhtPhiJet25 = event.mhtJet25vec.phi()
@@ -218,6 +223,11 @@ class ttHCoreEventAnalyzer( Analyzer ):
         event.mhtJet40j10lvec = ROOT.reco.Particle.LorentzVector(-1.*(sum([x.px() for x in objects40j10l])) , -1.*(sum([x.py() for x in objects40j10l])), 0, 0 )               
         event.mhtJet40j10l = event.mhtJet40j10lvec.pt()
         event.mhtPhiJet40j10l = event.mhtJet40j10lvec.phi()        
+
+        event.htJet30j10l5t = sum([x.pt() for x in objects30j10l5t])
+        event.mhtJet30j10l5tvec = ROOT.reco.Particle.LorentzVector(-1.*(sum([x.px() for x in objects30j10l5t])) , -1.*(sum([x.py() for x in objects30j10l5t])), 0, 0 )               
+        event.mhtJet30j10l5t = event.mhtJet30j10l5tvec.pt()
+        event.mhtPhiJet30j10l5t = event.mhtJet30j10l5tvec.phi()        
 
         event.htJet40j10l5t = sum([x.pt() for x in objects40j10l5t])
         event.mhtJet40j10l5tvec = ROOT.reco.Particle.LorentzVector(-1.*(sum([x.px() for x in objects40j10l5t])) , -1.*(sum([x.py() for x in objects40j10l5t])), 0, 0 )               

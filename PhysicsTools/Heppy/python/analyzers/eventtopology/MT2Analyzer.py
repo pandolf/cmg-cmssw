@@ -154,7 +154,9 @@ class MT2Analyzer( Analyzer ):
         import numpy
 
 
-        objects40jc = [ j for j in event.cleanJets if j.pt() > 40 and abs(j.eta())<2.5 ]
+        ptCut = 30.
+
+        objects40jc = [ j for j in event.cleanJets if j.pt() > 30 and abs(j.eta())<2.5 ]
 
 #### get hemispheres via AntiKT -1 antikt, 1 kt, 0 CA
         if len(objects40jc)>=2:
@@ -172,7 +174,7 @@ class MT2Analyzer( Analyzer ):
 
         if self.cfg_comp.isMC:
             allGenJets = [ x for x in self.handles['genJets'].product() ] 
-            objects40jc_Gen = [ j for j in allGenJets if j.pt() > 40 and abs(j.eta())<2.5 ]
+            objects40jc_Gen = [ j for j in allGenJets if j.pt() > 30 and abs(j.eta())<2.5 ]
      
             if len(objects40jc_Gen)>=2:
                 event.mt2_gen = self.getMT2Hemi(event,objects40jc_Gen, event.met.genMET(), "_gen")
@@ -202,7 +204,7 @@ class MT2Analyzer( Analyzer ):
             
         if hasattr(event, 'gamma_met'):
 
-            gamma_objects40jc = [ j for j in event.gamma_cleanJets if j.pt() > 40 and abs(j.eta())<2.5 ]
+            gamma_objects40jc = [ j for j in event.gamma_cleanJets if j.pt() > 30 and abs(j.eta())<2.5 ]
             
             gamma_objects40j10lc = gamma_objects40jc + objects10lc
             
@@ -236,7 +238,7 @@ class MT2Analyzer( Analyzer ):
 #            print 'MT2bb(2b)',event.mt2bb                                                                                                                                                                                                                 
         if len(event.bjetsMedium)==1:
 
-            objects40jcCSV = [ j for j in event.cleanJets if j.pt() > 40 and abs(j.eta())<2.5 and j.p4()!=event.bjetsMedium[0].p4() ]
+            objects40jcCSV = [ j for j in event.cleanJets if j.pt() > 30 and abs(j.eta())<2.5 and j.p4()!=event.bjetsMedium[0].p4() ]
             objects40jcCSV.sort(key = lambda l : l.btag('combinedInclusiveSecondaryVertexV2BJetTags'), reverse = True)
 
             if len(objects40jcCSV)>0:
