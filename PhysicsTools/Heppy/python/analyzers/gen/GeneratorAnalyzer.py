@@ -190,9 +190,11 @@ class GeneratorAnalyzer( Analyzer ):
             event.genbquarksFromTop = []
             event.genbquarksFromH   = []
             event.genlepsFromTop = []
+            event.genrecoils = []
+            
             for p in event.generatorSummary:
                 id = abs(p.pdgId())
-                if id == 25: 
+                if id == 25:
                     event.genHiggsBosons.append(p)
                 elif id in {23,24}:
                     event.genVBosons.append(p)
@@ -241,6 +243,18 @@ class GeneratorAnalyzer( Analyzer ):
                     if 25 in momids: event.genbquarksFromH.append(p)
                 if id <= 5 and any([abs(m.pdgId()) in {23,24} for m in realGenMothers(p)]):
                     event.genwzquarks.append(p)
+                if p.status() == 62:
+                    event.genrecoils.append(p)
+
+        # calculate total pt of particles with status 62
+        pt4 = ROOT.TLorentzVector()
+        for e in event.genrecoils:
+            e4 = ROOT.TLorentzVector()
+            e4.SetPtEtaPhiM(e.pt(), e.eta(), e.phi(), e.mass())
+            pt4 += e4
+            
+        event.GenRecoil_pt = pt4.Pt()
+
 
     def process(self, event):
         self.readCollections( event.input )

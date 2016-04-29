@@ -27,10 +27,10 @@ _btagWPs = {
     "CSVL": ("combinedSecondaryVertexBJetTags", 0.244),
     "CSVM": ("combinedSecondaryVertexBJetTags", 0.679),
     "CSVT": ("combinedSecondaryVertexBJetTags", 0.898),
-###https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation74X50ns
-    "CSVv2IVFL": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.605),
-    "CSVv2IVFM": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.890),
-    "CSVv2IVFT": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.990),
+###https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80X
+    "CSVv2IVFL": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.460),
+    "CSVv2IVFM": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.800),
+    "CSVv2IVFT": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.935),
     "CMVAL": ("pfCombinedMVABJetTags", 0.630), # for same b-jet efficiency of CSVv2IVFL on ttbar MC, jet pt > 30
     "CMVAM": ("pfCombinedMVABJetTags", 0.732), # for same b-jet efficiency of CSVv2IVFM on ttbar MC, jet pt > 30
     "CMVAT": ("pfCombinedMVABJetTags", 0.813), # for same b-jet efficiency of CSVv2IVFT on ttbar MC, jet pt > 30
