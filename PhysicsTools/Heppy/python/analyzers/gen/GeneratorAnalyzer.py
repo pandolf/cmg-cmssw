@@ -2,6 +2,8 @@ from PhysicsTools.Heppy.analyzers.core.Analyzer import Analyzer
 from PhysicsTools.Heppy.analyzers.core.AutoHandle import AutoHandle
 from PhysicsTools.Heppy.physicsutils.genutils import isNotFromHadronicShower, realGenMothers, realGenDaughters
 
+import ROOT
+
 def interestingPdgId(id,includeLeptons=False):        
     id = abs(id)
     return id in [6,7,8,17,18] or (includeLeptons and 11 <= id and id < 16) or (22 <= id and id < 40) or id > 1000000
