@@ -250,10 +250,21 @@ class GeneratorAnalyzer( Analyzer ):
 
         # calculate total pt of particles with status 62
         pt4 = ROOT.TLorentzVector()
+        event.toppt = -99
+        event.antitoppt = -99
+        
         for e in event.genrecoils:
             e4 = ROOT.TLorentzVector()
             e4.SetPtEtaPhiM(e.pt(), e.eta(), e.phi(), e.mass())
             pt4 += e4
+            
+            if e.pdgId() == 6:
+                # print "top quark with pt ", e.pt()
+                event.toppt = e.pt()
+                
+            if e.pdgId() == -6:
+                # print "anti-top quark with pt ", e.pt()
+                event.antitoppt = e.pt()
             
         event.GenRecoil_pt = pt4.Pt()
 
