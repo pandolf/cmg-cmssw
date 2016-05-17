@@ -91,6 +91,7 @@ class JetAnalyzer( Analyzer ):
           # instantiate the jet re-calibrator
           self.jetReCalibrator = JetReCalibrator(GT, cfg_ana.recalibrationType, doResidual, cfg_ana.jecPath, **kwargs)
         self.doPuId = getattr(self.cfg_ana, 'doPuId', True)
+        self.doJetCleaning = getattr(self.cfg_ana, 'doJetCleaning', True)
         self.jetLepDR = getattr(self.cfg_ana, 'jetLepDR', 0.4)
         self.jetLepArbitration = getattr(self.cfg_ana, 'jetLepArbitration', lambda jet,lepton: lepton) 
         self.lepPtMin = getattr(self.cfg_ana, 'minLepPt', -1)
@@ -217,79 +218,85 @@ class JetAnalyzer( Analyzer ):
                 self.jetsIdOnly.append(jet)
 
         jetsEtaCut = [j for j in self.jets if abs(j.eta()) <  self.cfg_ana.jetEta ]
-        self.cleanJetsAll, cleanLeptons = cleanJetsAndLeptons(jetsEtaCut, leptons, self.jetLepDR, self.jetLepArbitration)
+        
+        if self.doJetCleaning:
 
-        self.cleanJets    = [j for j in self.cleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
-        self.cleanJetsFwd = [j for j in self.cleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
-        self.discardedJets = [j for j in self.jets if j not in self.cleanJetsAll]
-        if hasattr(event, 'selectedLeptons') and self.cfg_ana.cleanSelectedLeptons:
-            event.discardedLeptons = [ l for l in leptons if l not in cleanLeptons ]
-            event.selectedLeptons  = [ l for l in event.selectedLeptons if l not in event.discardedLeptons ]
-        for lep in leptons:
-            if hasattr(lep, "jetOverlap"):
-                if lep.jetOverlap in self.cleanJetsAll:
+            self.cleanJetsAll, cleanLeptons = cleanJetsAndLeptons(jetsEtaCut, leptons, self.jetLepDR, self.jetLepArbitration)
+
+            self.cleanJets    = [j for j in self.cleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+            self.cleanJetsFwd = [j for j in self.cleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
+            self.discardedJets = [j for j in self.jets if j not in self.cleanJetsAll]
+            if hasattr(event, 'selectedLeptons') and self.cfg_ana.cleanSelectedLeptons:
+                event.discardedLeptons = [ l for l in leptons if l not in cleanLeptons ]
+                event.selectedLeptons  = [ l for l in event.selectedLeptons if l not in event.discardedLeptons ]
+            for lep in leptons:
+                if hasattr(lep, "jetOverlap"):
+                    if lep.jetOverlap in self.cleanJetsAll:
                     #print "overlap reco", lep.p4().pt(), lep.p4().eta(), lep.p4().phi(), lep.jetOverlap.p4().pt(), lep.jetOverlap.p4().eta(), lep.jetOverlap.p4().phi()
-                    lep.jetOverlapIdx = self.cleanJetsAll.index(lep.jetOverlap)
-                elif lep.jetOverlap in self.discardedJets:
+                        lep.jetOverlapIdx = self.cleanJetsAll.index(lep.jetOverlap)
+                    elif lep.jetOverlap in self.discardedJets:
                     #print "overlap discarded", lep.p4().pt(), lep.p4().eta(), lep.p4().phi(), lep.jetOverlap.p4().pt(), lep.jetOverlap.p4().eta(), lep.jetOverlap.p4().phi()
-                    lep.jetOverlapIdx = 1000 + self.discardedJets.index(lep.jetOverlap)
+                        lep.jetOverlapIdx = 1000 + self.discardedJets.index(lep.jetOverlap)
 
         ## First cleaning, then Jet Id
-        self.noIdCleanJetsAll, cleanLeptons = cleanJetsAndLeptons(self.jetsAllNoID, leptons, self.jetLepDR, self.jetLepArbitration)
-        self.noIdCleanJets = [j for j in self.noIdCleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
-        self.noIdCleanJetsFwd = [j for j in self.noIdCleanJetsAll if abs(j.eta()) >=  self.cfg_ana.jetEtaCentral ]
-        self.noIdDiscardedJets = [j for j in self.jetsAllNoID if j not in self.noIdCleanJetsAll]
+            self.noIdCleanJetsAll, cleanLeptons = cleanJetsAndLeptons(self.jetsAllNoID, leptons, self.jetLepDR, self.jetLepArbitration)
+            self.noIdCleanJets = [j for j in self.noIdCleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+            self.noIdCleanJetsFwd = [j for j in self.noIdCleanJetsAll if abs(j.eta()) >=  self.cfg_ana.jetEtaCentral ]
+            self.noIdDiscardedJets = [j for j in self.jetsAllNoID if j not in self.noIdCleanJetsAll]
 
         ## Clean Jets from photons (first cleaning, then Jet Id)
-        photons = []
-        if hasattr(event, 'selectedPhotons'):
-            if self.cfg_ana.cleanJetsFromFirstPhoton:
-                photons = event.selectedPhotons[:1]
+            photons = []
+            if hasattr(event, 'selectedPhotons'):
+                if self.cfg_ana.cleanJetsFromFirstPhoton:
+                    photons = event.selectedPhotons[:1]
+                else:
+                    photons = [ g for g in event.selectedPhotons ] 
+
+            self.gamma_cleanJetaAll = []
+            self.gamma_noIdCleanJetsAll = []
+
+            if self.cleanFromLepAndGammaSimultaneously:
+                self.gamma_cleanJetsAll = cleanNearestJetOnly(jetsEtaCut, photons+leptons, self.jetGammaLepDR)
+                self.gamma_noIdCleanJetsAll = cleanNearestJetOnly(self.jetsAllNoID, photons+leptons, self.jetGammaLepDR)
             else:
-                photons = [ g for g in event.selectedPhotons ] 
+                self.gamma_cleanJetsAll = cleanNearestJetOnly(self.cleanJetsAll, photons, self.jetGammaDR)
+                self.gamma_noIdCleanJetsAll = cleanNearestJetOnly(self.noIdCleanJetsAll, photons, self.jetGammaDR)
 
-        self.gamma_cleanJetaAll = []
-        self.gamma_noIdCleanJetsAll = []
-
-        if self.cleanFromLepAndGammaSimultaneously:
-            self.gamma_cleanJetsAll = cleanNearestJetOnly(jetsEtaCut, photons+leptons, self.jetGammaLepDR)
-            self.gamma_noIdCleanJetsAll = cleanNearestJetOnly(self.jetsAllNoID, photons+leptons, self.jetGammaLepDR)
-        else:
-            self.gamma_cleanJetsAll = cleanNearestJetOnly(self.cleanJetsAll, photons, self.jetGammaDR)
-            self.gamma_noIdCleanJetsAll = cleanNearestJetOnly(self.noIdCleanJetsAll, photons, self.jetGammaDR)
-
-        self.gamma_cleanJets    = [j for j in self.gamma_cleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
-        self.gamma_cleanJetsFwd = [j for j in self.gamma_cleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
-
-        self.gamma_noIdCleanJets    = [j for j in self.gamma_noIdCleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
-        self.gamma_noIdCleanJetsFwd = [j for j in self.gamma_noIdCleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
+            self.gamma_cleanJets    = [j for j in self.gamma_cleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+            self.gamma_cleanJetsFwd = [j for j in self.gamma_cleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
+            
+            self.gamma_noIdCleanJets    = [j for j in self.gamma_noIdCleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+            self.gamma_noIdCleanJetsFwd = [j for j in self.gamma_noIdCleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
         ###
 
-        if self.cfg_ana.alwaysCleanPhotons:
-            self.cleanJets = self.gamma_cleanJets
-            self.cleanJetsAll = self.gamma_cleanJetsAll
-            self.cleanJetsFwd = self.gamma_cleanJetsFwd
+            if self.cfg_ana.alwaysCleanPhotons:
+                self.cleanJets = self.gamma_cleanJets
+                self.cleanJetsAll = self.gamma_cleanJetsAll
+                self.cleanJetsFwd = self.gamma_cleanJetsFwd
             #
-            self.noIdCleanJets = self.gamma_noIdCleanJets
-            self.noIdCleanJetsAll = self.gamma_noIdCleanJetsAll
-            self.noIdCleanJetsFwd = self.gamma_noIdCleanJetsFwd
+                self.noIdCleanJets = self.gamma_noIdCleanJets
+                self.noIdCleanJetsAll = self.gamma_noIdCleanJetsAll
+                self.noIdCleanJetsFwd = self.gamma_noIdCleanJetsFwd
 
         ## Jet Id, after jet/lepton cleaning
-        self.cleanJetsFailIdAll = []
-        for jet in self.noIdCleanJetsAll:
-            if not self.testJetID( jet ):
-                self.cleanJetsFailIdAll.append(jet)
+            self.cleanJetsFailIdAll = []
+            for jet in self.noIdCleanJetsAll:
+                if not self.testJetID( jet ):
+                    self.cleanJetsFailIdAll.append(jet)
         
-        self.cleanJetsFailId = [j for j in self.cleanJetsFailIdAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+            self.cleanJetsFailId = [j for j in self.cleanJetsFailIdAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
         
         ## Jet Id, after jet/photon cleaning
-        self.gamma_cleanJetsFailIdAll = []
-        for jet in self.gamma_noIdCleanJetsAll:
-            if not self.testJetID( jet ):
-                self.gamma_cleanJetsFailIdAll.append(jet)
+            self.gamma_cleanJetsFailIdAll = []
+            for jet in self.gamma_noIdCleanJetsAll:
+                if not self.testJetID( jet ):
+                    self.gamma_cleanJetsFailIdAll.append(jet)
 
-        self.gamma_cleanJetsFailId = [j for j in self.gamma_cleanJetsFailIdAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+            self.gamma_cleanJetsFailId = [j for j in self.gamma_cleanJetsFailIdAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
         
+        else:
+            self.cleanJetsAll = jetsEtaCut
+            
         ## Associate jets to leptons
         incleptons = event.inclusiveLeptons if hasattr(event, 'inclusiveLeptons') else event.selectedLeptons
         jlpairs = matchObjectCollection(incleptons, allJets, self.jetLepDR**2)
@@ -318,11 +325,16 @@ class JetAnalyzer( Analyzer ):
                 if hasattr(j, 'deltaMetFromJetSmearing'):
                     self.deltaMetFromJetSmearing[0] += j.deltaMetFromJetSmearing[0]
                     self.deltaMetFromJetSmearing[1] += j.deltaMetFromJetSmearing[1]
-
-            self.cleanGenJets = cleanNearestJetOnly(self.genJets, leptons, self.jetLepDR)
             
-            if self.cfg_ana.cleanGenJetsFromPhoton:
-                self.cleanGenJets = cleanNearestJetOnly(self.cleanGenJets, photons, self.jetLepDR)
+            if self.doJetCleaning:
+                self.cleanGenJets = cleanNearestJetOnly(self.genJets, leptons, self.jetLepDR)
+            
+                if self.cfg_ana.cleanGenJetsFromPhoton:
+                    self.cleanGenJets = cleanNearestJetOnly(self.cleanGenJets, photons, self.jetLepDR)
+            
+            else:
+                self.cleanGenJets = self.genJets
+
 
 	    if getattr(self.cfg_ana, 'attachNeutrinos', True) and hasattr(self.cfg_ana,"genNuSelection") :
 		jetNus=[x for x in event.genParticles if abs(x.pdgId()) in [12,14,16] and self.cfg_ana.genNuSelection(x) ]
@@ -348,23 +360,27 @@ class JetAnalyzer( Analyzer ):
         setattr(event,"jetsFailId"             +self.cfg_ana.collectionPostFix, self.jetsFailId             ) 
         setattr(event,"jetsAllNoID"            +self.cfg_ana.collectionPostFix, self.jetsAllNoID            ) 
         setattr(event,"jetsIdOnly"             +self.cfg_ana.collectionPostFix, self.jetsIdOnly             ) 
-        setattr(event,"cleanJetsAll"           +self.cfg_ana.collectionPostFix, self.cleanJetsAll           ) 
-        setattr(event,"cleanJets"              +self.cfg_ana.collectionPostFix, self.cleanJets              ) 
-        setattr(event,"cleanJetsFwd"           +self.cfg_ana.collectionPostFix, self.cleanJetsFwd           ) 
-        setattr(event,"cleanJetsFailIdAll"           +self.cfg_ana.collectionPostFix, self.cleanJetsFailIdAll           ) 
-        setattr(event,"cleanJetsFailId"              +self.cfg_ana.collectionPostFix, self.cleanJetsFailId              ) 
-        setattr(event,"discardedJets"          +self.cfg_ana.collectionPostFix, self.discardedJets          ) 
-        setattr(event,"gamma_cleanJetsAll"     +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsAll     ) 
-        setattr(event,"gamma_cleanJets"        +self.cfg_ana.collectionPostFix, self.gamma_cleanJets        ) 
-        setattr(event,"gamma_cleanJetsFwd"     +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFwd     ) 
-        setattr(event,"gamma_cleanJetsFailIdAll"     +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFailIdAll     ) 
-        setattr(event,"gamma_cleanJetsFailId"        +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFailId        ) 
-
+        
+        if self.doJetCleaning:
+            setattr(event,"cleanJetsAll"           +self.cfg_ana.collectionPostFix, self.cleanJetsAll           ) 
+            setattr(event,"cleanJets"              +self.cfg_ana.collectionPostFix, self.cleanJets              ) 
+            setattr(event,"cleanJetsFwd"           +self.cfg_ana.collectionPostFix, self.cleanJetsFwd           ) 
+            setattr(event,"cleanJetsFailIdAll"           +self.cfg_ana.collectionPostFix, self.cleanJetsFailIdAll           ) 
+            setattr(event,"cleanJetsFailId"              +self.cfg_ana.collectionPostFix, self.cleanJetsFailId              ) 
+            setattr(event,"discardedJets"          +self.cfg_ana.collectionPostFix, self.discardedJets          ) 
+            setattr(event,"gamma_cleanJetsAll"     +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsAll     ) 
+            setattr(event,"gamma_cleanJets"        +self.cfg_ana.collectionPostFix, self.gamma_cleanJets        ) 
+            setattr(event,"gamma_cleanJetsFwd"     +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFwd     ) 
+            setattr(event,"gamma_cleanJetsFailIdAll"     +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFailIdAll     ) 
+            setattr(event,"gamma_cleanJetsFailId"        +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFailId        ) 
+            
 
         if self.cfg_comp.isMC:
             setattr(event,"deltaMetFromJetSmearing"+self.cfg_ana.collectionPostFix, self.deltaMetFromJetSmearing) 
-            setattr(event,"cleanGenJets"           +self.cfg_ana.collectionPostFix, self.cleanGenJets           )
             setattr(event,"genJets"                +self.cfg_ana.collectionPostFix, self.genJets                )
+            if self.doJetCleaning:
+                setattr(event,"cleanGenJets"           +self.cfg_ana.collectionPostFix, self.cleanGenJets           )
+
             if self.cfg_ana.do_mc_match:
                 setattr(event,"bqObjects"              +self.cfg_ana.collectionPostFix, self.bqObjects              )
                 setattr(event,"cqObjects"              +self.cfg_ana.collectionPostFix, self.cqObjects              )
@@ -502,6 +518,7 @@ setattr(JetAnalyzer,"defaultConfig", cfg.Analyzer(
     calculateType1METCorrection  = False,
     type1METParams = { 'jetPtThreshold':15., 'skipEMfractionThreshold':0.9, 'skipMuons':True },
     addJERShifts = 0, # add +/-1 sigma shifts to jets, intended to be used with shiftJER=0
+    doJetCleaning = True,
     cleanJetsFromFirstPhoton = False,
     cleanJetsFromTaus = False,
     cleanJetsFromIsoTracks = False,
