@@ -2,6 +2,8 @@ from PhysicsTools.Heppy.analyzers.core.Analyzer import Analyzer
 from PhysicsTools.Heppy.analyzers.core.AutoHandle import AutoHandle
 from PhysicsTools.Heppy.physicsutils.genutils import isNotFromHadronicShower, realGenMothers, realGenDaughters, motherRef
 
+import ROOT
+
 def interestingPdgId(id,includeLeptons=False):        
     id = abs(id)
     return id in [6,7,8,17,18] or (includeLeptons and 11 <= id and id < 16) or (22 <= id and id < 40) or id > 1000000
@@ -190,9 +192,11 @@ class GeneratorAnalyzer( Analyzer ):
             event.genbquarksFromTop = []
             event.genbquarksFromH   = []
             event.genlepsFromTop = []
+            event.genrecoils = []
+            
             for p in event.generatorSummary:
                 id = abs(p.pdgId())
-                if id == 25: 
+                if id == 25:
                     event.genHiggsBosons.append(p)
                 elif id in {23,24}:
                     event.genVBosons.append(p)
@@ -241,6 +245,29 @@ class GeneratorAnalyzer( Analyzer ):
                     if 25 in momids: event.genbquarksFromH.append(p)
                 if id <= 5 and any([abs(m.pdgId()) in {23,24} for m in realGenMothers(p)]):
                     event.genwzquarks.append(p)
+                if p.status() == 62:
+                    event.genrecoils.append(p)
+
+        # calculate total pt of particles with status 62
+        pt4 = ROOT.TLorentzVector()
+        event.toppt = -99
+        event.antitoppt = -99
+        
+        for e in event.genrecoils:
+            e4 = ROOT.TLorentzVector()
+            e4.SetPtEtaPhiM(e.pt(), e.eta(), e.phi(), e.mass())
+            pt4 += e4
+            
+            if e.pdgId() == 6:
+                # print "top quark with pt ", e.pt()
+                event.toppt = e.pt()
+                
+            if e.pdgId() == -6:
+                # print "anti-top quark with pt ", e.pt()
+                event.antitoppt = e.pt()
+            
+        event.GenRecoil_pt = pt4.Pt()
+
 
     def process(self, event):
         self.readCollections( event.input )
