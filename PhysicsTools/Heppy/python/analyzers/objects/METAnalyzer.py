@@ -28,6 +28,7 @@ class METAnalyzer( Analyzer ):
     def declareHandles(self):
         super(METAnalyzer, self).declareHandles()
         self.handles['met'] = AutoHandle( self.cfg_ana.metCollection, 'std::vector<pat::MET>' )
+        self.handles['metUncor'] = AutoHandle( self.cfg_ana.metCollection, 'std::vector<pat::MET>' )
         if self.cfg_ana.doMetNoPU: 
             self.handles['nopumet'] = AutoHandle( self.cfg_ana.noPUMetCollection, 'std::vector<pat::MET>' )
         if self.cfg_ana.doTkMet:
@@ -176,9 +177,11 @@ class METAnalyzer( Analyzer ):
         import ROOT
         if self.cfg_ana.copyMETsByValue:
           self.met = ROOT.pat.MET(self.handles['met'].product()[0])
+          self.metUncor = copy.deepcopy(self.met)
           if self.cfg_ana.doMetNoPU: self.metNoPU = ROOT.pat.MET(self.handles['nopumet'].product()[0])
         else:
           self.met = self.handles['met'].product()[0]
+          self.metUncor = copy.deepcopy(self.met)
           if self.cfg_ana.doMetNoPU: self.metNoPU = self.handles['nopumet'].product()[0]
 
         if self.recalibrateMET == "type1":
@@ -235,6 +238,7 @@ class METAnalyzer( Analyzer ):
 
         if hasattr(event,"met"+self.cfg_ana.collectionPostFix): raise RuntimeError, "Event already contains met with the following postfix: "+self.cfg_ana.collectionPostFix
         setattr(event, "met"+self.cfg_ana.collectionPostFix, self.met)
+        setattr(event, "metUncor"+self.cfg_ana.collectionPostFix, self.metUncor)
         if self.cfg_ana.doMetNoPU: setattr(event, "metNoPU"+self.cfg_ana.collectionPostFix, self.metNoPU)
         setattr(event, "met_sig"+self.cfg_ana.collectionPostFix, self.met_sig)
         setattr(event, "met_sumet"+self.cfg_ana.collectionPostFix, self.met_sumet)
