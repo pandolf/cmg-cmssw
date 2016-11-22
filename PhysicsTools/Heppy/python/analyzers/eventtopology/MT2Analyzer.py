@@ -239,7 +239,10 @@ class MT2Analyzer( Analyzer ):
 
         setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"", -999)
         setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"_Xj", -999)
-
+        
+        ### MT2 with reco jets and GEN met:
+        setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"_Xj_genmet", -999)
+        
         setattr(event, "pseudoJet1"+self.cfg_ana.collectionPostFix+"", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
         setattr(event, "pseudoJet2"+self.cfg_ana.collectionPostFix+"", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
         setattr(event, "pseudoJet1"+self.cfg_ana.collectionPostFix+"_Xj", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
@@ -252,6 +255,11 @@ class MT2Analyzer( Analyzer ):
         if len(objectsXj10lc)>=2:
 
             self.mt2_Xj = self.getMT2Hemi(event,objectsXj10lc,self.met,self.cfg_ana.collectionPostFix,"_Xj") # no postfit since this is the nominal MT2
+            
+            ### MT2 with reco jets and GEN met:
+            if self.cfg_comp.isMC and self.met.genMET():
+                self.mt2_Xj_genmet = self.getMT2Hemi(event,objectsXj10lc,self.met.genMET(),self.cfg_ana.collectionPostFix,"_Xj_genmet")
+            
 
 ## ===> full gamma_MT2
 
