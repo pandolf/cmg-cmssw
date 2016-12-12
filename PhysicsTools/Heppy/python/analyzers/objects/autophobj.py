@@ -241,4 +241,9 @@ genParticleWithAncestryType = NTupleObjectType("genParticleWithAncestry", baseOb
 genParticleWithLinksType = NTupleObjectType("genParticleWithLinks", baseObjectTypes = [ genParticleWithAncestryType ], mcOnly=True, variables = [
     NTupleVariable("motherIndex", lambda x : x.motherIndex, int, help="index of the mother in the generatorSummary")
 ])
+genTauWithLinksType = NTupleObjectType("genTauWithLinks", baseObjectTypes = [ genParticleWithLinksType ], mcOnly=True, variables = [
+    NTupleVariable("decayMode", lambda x : x.decayMode, int, help="decay mode of tau lepton: 11 for e, 13 for mu, 1 for 1-prong, 3 for 3-prong"),
+    NTupleVariable("leadTrackPt", lambda x : x.leadTrackPt, float, help="pT of leading decay charged track"),
+    NTupleVariable("neutralDaughters", lambda x : x.neutralDaughters, int, help="number of neutral non-neutrino daughters"),
+])
 
