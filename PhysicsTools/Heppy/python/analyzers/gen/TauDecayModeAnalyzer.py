@@ -51,7 +51,8 @@ class TauDecayModeAnalyzer( Analyzer ):
             
             if p.status() !=2 and p.status()!=23:
                 continue;
-            if abs(p.motherId) != 25 and abs(p.motherId) != 24 and abs(p.motherId) != 23 and abs(p.motherId) != 21:
+#            if abs(p.motherId) != 25 and abs(p.motherId) != 24 and abs(p.motherId) != 23 and abs(p.motherId) != 21: ### Gluons added
+            if abs(p.motherId) != 25 and abs(p.motherId) != 24 and abs(p.motherId) != 23:
                 continue;
 
             if p.status() == 23:
