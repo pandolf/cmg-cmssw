@@ -163,6 +163,10 @@ class GeneratorAnalyzer( Analyzer ):
                 p.motherId = moms[0].pdgId()
                 gmoms = realGenMothers(moms[0])
                 p.grandmotherId = (gmoms[0].pdgId() if len(gmoms)==1 else (0 if len(gmoms)==0 else -9999))
+#            elif abs(p.mother(0).pdgId())==21 and p.status()==1:
+#                #print "    unclear what mothers to give to this particle, among ","  ".join("%d[%d]" % (m.pdgId(),m.status()) for m in moms)
+#                p.motherId = p.mother(0).pdgId()
+#                p.grandmotherId = -9999
             else:
                 #print "    unclear what mothers to give to this particle, among ","  ".join("%d[%d]" % (m.pdgId(),m.status()) for m in moms)
                 p.motherId = -9999
