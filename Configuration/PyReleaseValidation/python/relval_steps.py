@@ -1,6 +1,7 @@
 from MatrixUtil import *
 
 from Configuration.HLT.autoHLT import autoHLT
+from Configuration.AlCa.autoPCL import autoPCL
 
 # step1 gensim: for run1
 step1Defaults = {'--relval'      : None, # need to be explicitly set
@@ -181,6 +182,26 @@ steps['RunSingleMu2015D']={'INPUT':InputInfo(dataSet='/SingleMuon/Run2015D-v1/RA
 steps['RunSinglePh2015D']={'INPUT':InputInfo(dataSet='/SinglePhoton/Run2015D-v1/RAW',label='sigPh2015D',events=100000,location='STD', ls=Run2015D)}
 steps['RunZeroBias2015D']={'INPUT':InputInfo(dataSet='/ZeroBias/Run2015D-v1/RAW',label='zb2015D',events=100000,location='STD',ib_block='38d4cab6-5d5f-11e5-824b-001e67ac06a0',ls=Run2015D)}
 
+#### run2 2016B ####
+# Run2016B, 25ns: 274160
+#Run2016B=selectedLS([274160],l_json=data_json2016)
+Run2016B={274199: [[1, 250]]}
+steps['RunHLTPhy2016B']={'INPUT':InputInfo(dataSet='/HLTPhysics/Run2016B-v2/RAW',label='hltPhy2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunDoubleEG2016B']={'INPUT':InputInfo(dataSet='/DoubleEG/Run2016B-v2/RAW',label='doubEG2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunDoubleMuon2016B']={'INPUT':InputInfo(dataSet='/DoubleMuon/Run2016B-v2/RAW',label='doubMu2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunJetHT2016B']={'INPUT':InputInfo(dataSet='/JetHT/Run2016B-v2/RAW',label='jetHT2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunMET2016B']={'INPUT':InputInfo(dataSet='/MET/Run2016B-v2/RAW',label='met2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunMuonEG2016B']={'INPUT':InputInfo(dataSet='/MuonEG/Run2016B-v2/RAW',label='muEG2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunDoubleEGPrpt2016B']={'INPUT':InputInfo(dataSet='/DoubleEG/Run2016B-ZElectron-PromptReco-v2/RAW-RECO',label='dbEGPrpt2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunSingleMuPrpt2016B']={'INPUT':InputInfo(dataSet='/SingleMuon/Run2016B-ZMu-PromptReco-v2/RAW-RECO',label='sgMuPrpt2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunSingleEl2016B']={'INPUT':InputInfo(dataSet='/SingleElectron/Run2016B-v2/RAW',label='sigEl2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunSingleMu2016B']={'INPUT':InputInfo(dataSet='/SingleMuon/Run2016B-v2/RAW',label='sigMu2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunSinglePh2016B']={'INPUT':InputInfo(dataSet='/SinglePhoton/Run2016B-v2/RAW',label='sigPh2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunZeroBias2016B']={'INPUT':InputInfo(dataSet='/ZeroBias/Run2016B-v2/RAW',label='zb2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunMuOnia2016B']={'INPUT':InputInfo(dataSet='/MuOnia/Run2016B-v2/RAW',label='muOnia2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunNoBPTX2016B']={'INPUT':InputInfo(dataSet='/NoBPTX/Run2016B-v2/RAW',label='noBptx2016B',events=100000,location='STD', ls=Run2016B)}
+steps['RunZeroBias2016BnewL1repack']={'INPUT':InputInfo(dataSet='/ZeroBias/Run2016B-v2/RAW',label='zb2016BnewL1rep',events=100000,location='STD', ls=Run2016B)}
+
 # Highstat HLTPhysics 
 Run2015DHS=selectedLS([258712,258713,258714,258741,258742,258745,258749,258750,259626,259637,259683,259685,259686,259721,259809,259810,259818,259820,259821,259822,259862,259890,259891])
 steps['RunHLTPhy2015DHS']={'INPUT':InputInfo(dataSet='/HLTPhysics/Run2015D-v1/RAW',label='hltPhy2015DHS',events=100000,location='STD', ls=Run2015DHS)}
@@ -192,6 +213,12 @@ Run2015HLHS=selectedLS([260627])
 steps['RunJetHT2015HLHS']={'INPUT':InputInfo(dataSet='/JetHT/Run2015D-v1/RAW',label='jetHT2015HLHT',events=100000,location='STD', ls=Run2015HLHS)}
 steps['RunZeroBias2015HLHS']={'INPUT':InputInfo(dataSet='/ZeroBias/Run2015D-v1/RAW',label='zb2015HLHT',events=100000,location='STD', ls=Run2015HLHS)}
 steps['RunSingleMu2015HLHS']={'INPUT':InputInfo(dataSet='/SingleMuon/Run2015D-v1/RAW',label='sigMu2015HLHT',events=100000,location='STD', ls=Run2015HLHS)}
+
+#### run2 Cosmic ####
+##Run 256259 @ 0T 2015C###
+##Run 272133 @ 3.8T 2016B###
+steps['RunCosmics2015C']={'INPUT':InputInfo(dataSet='/Cosmics/Run2015C-v1/RAW',label='cos2015C',run=[256259],events=100000,location='STD')}
+steps['RunCosmics2016B']={'INPUT':InputInfo(dataSet='/Cosmics/Run2016B-v1/RAW',label='cos2016B',run=[272133],events=100000,location='STD')}
 
 def gen(fragment,howMuch):
     global step1Defaults
@@ -549,14 +576,14 @@ steps['ZEEMM_13_HI']=merge([hiDefaults,steps['ZEEMM_13']])
 
 #### fastsim section ####
 ##no forseen to do things in two steps GEN-SIM then FASTIM->end: maybe later
-step1FastDefaults =merge([{'-s':'GEN,SIM,RECOBEFMIX,DIGI:pdigi_valid,L1,L1Reco,RECO,EI,HLT:@fake,VALIDATION:@standardValidation,DQM:@standardDQM',
+step1FastDefaults =merge([{'-s':'GEN,SIM,RECOBEFMIX,DIGI:pdigi_valid,L1,DIGI2RAW,L1Reco,RECO,EI,HLT:@fake,VALIDATION:@standardValidation,DQM:@standardDQM',
                            '--fast':'',
                            '--beamspot'    : 'Realistic8TeVCollision',
                            '--eventcontent':'FEVTDEBUGHLT,DQM',
                            '--datatier':'GEN-SIM-DIGI-RECO,DQMIO',
                            '--relval':'27000,3000'},
                           step1Defaults])
-step1FastUpg2015Defaults =merge([{'-s':'GEN,SIM,RECOBEFMIX,DIGI:pdigi_valid,L1,L1Reco,RECO,EI,DIGI2RAW,HLT:@relval25ns,VALIDATION:@standardValidation,DQM:@standardDQM',
+step1FastUpg2015Defaults =merge([{'-s':'GEN,SIM,RECOBEFMIX,DIGI:pdigi_valid,L1,DIGI2RAW,L1Reco,RECO,EI,HLT:@relval2016,VALIDATION:@standardValidation,DQM:@standardDQM',
                            '--fast':'',
                            '--conditions'  :'auto:run2_mc',
                            '--beamspot'    : 'Realistic50ns13TeVCollision',
@@ -623,7 +650,7 @@ steps["FS_PREMIXUP15_PU25"] = merge([
 
 ### Fastsim: template to produce signal and overlay it with premixed minbias events
 FS_PREMIXUP15_PU25_OVERLAY = merge([
-        {"-s" : "GEN,SIM,RECOBEFMIX,DIGIPREMIX_S2:pdigi_valid,DATAMIX,L1,L1Reco,RECO,HLT:@relval25ns,VALIDATION",
+        {"-s" : "GEN,SIM,RECOBEFMIX,DIGIPREMIX_S2:pdigi_valid,DATAMIX,L1,DIGI2RAW,L1Reco,RECO,HLT:@relval2016,VALIDATION",
          "--datamix" : "PreMix",
          "--pileup_input" : "dbs:/RelValFS_PREMIXUP15_PU25/%s/GEN-SIM-DIGI-RAW"%(baseDataSetRelease[8],),
          "--customise":"SimGeneral/DataMixingModule/customiseForPremixingInput.customiseForPreMixingInput"
@@ -777,12 +804,32 @@ steps['WToLNutaurhonu_13TeV_pythia8-tauola']=genvalid('Hadronizer_MgmMatchTuneCU
 steps['Hadronizer_TuneCUETP8M1_13TeV_MLM_5f_max4j_LHE_pythia8_Tauola_taurhonu']=genvalid('Hadronizer_TuneCUETP8M1_13TeV_MLM_5f_max4j_LHE_pythia8_Tauola_taurhonu_cff',step1HadronizerDefaults)
 steps['GGToHtaurhonu_13TeV_pythia8-tauola']=genvalid('GGToHtautau_13TeV_pythia8_Tauola_taurhonu_cff',step1GenDefaults)
 
-# normal fullSim workflows wrapping ext-gen workflows
-# LHE step
-steps['TTbar012Jets_NLO_Mad_py8_Evt_13']=merge([{'--relval':'29000,100'},step1LHENormal,steps['TTbar012Jets_5f_NLO_FXFX_Madgraph_LHE_13TeV']])
+# normal fullSim workflows using gridpack LHE generator
+# LHE-GEN-SIM step
+step1LHEGenSimDefault = { '--relval':'9000,50',
+                          '-s':'LHE,GEN,SIM',
+                          '-n'            : 10,
+                          '--conditions'  : 'auto:run2_mc',
+                          '--beamspot'    : 'Realistic50ns13TeVCollision',
+                          '--datatier'    : 'GEN-SIM,LHE',
+                          '--eventcontent': 'FEVTDEBUG,LHE',
+                          '--era'         : 'Run2_2016',
+                        }
 
-# GEN-SIM step
-steps['GENSIM_TuneCUETP8M1_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_py8_Evt'] = merge([step1GENNormal,steps['Hadronizer_TuneCUETP8M1_13TeV_aMCatNLO_FXFX_5f_max2j_max1p_LHE_pythia8_evtgen']])
+def lhegensim(fragment,howMuch):
+    global step1LHEGenSimDefault
+    return merge([{'cfg':fragment},howMuch,step1LHEGenSimDefault])
+
+steps['TTbar012Jets_NLO_Mad_py8_Evt_13']=lhegensim('Configuration/Generator/python/TTbar012Jets_5f_NLO_FXFX_Madgraph_LHE_13TeV_cfi.py',Kby(9,50))
+steps['GluGluHToZZTo4L_M125_Pow_py8_Evt_13']=lhegensim('Configuration/Generator/python/GGHZZ4L_JHUGen_Pow_NNPDF30_LHE_13TeV_cfi.py', Kby(9,50))
+steps['VBFHToZZTo4Nu_M125_Pow_py8_Evt_13']=lhegensim('Configuration/Generator/python/VBFHZZ4Nu_Pow_NNPDF30_LHE_13TeV_cfi.py',Kby(9,50))
+steps['VBFHToBB_M125_Pow_py8_Evt_13']=lhegensim('Configuration/Generator/python/VBFHbb_Pow_NNPDF30_LHE_13TeV_cfi.py',Kby(9,50))
+
+#GEN-SIM inputs for LHE-GEN-SIM workflows
+#steps['TTbar012Jets_NLO_Mad_py8_Evt_13INPUT']={'INPUT':InputInfo(dataSet='/RelValTTbar012Jets_NLO_Mad_py8_Evt_13/%s/GEN-SIM'%(baseDataSetRelease[3],),location='STD')}
+#steps['GluGluHToZZTo4L_M125_Pow_py8_Evt_13INPUT']={'INPUT':InputInfo(dataSet='/RelValGluGluHToZZTo4L_M125_Pow_py8_Evt_13/%s/GEN-SIM'%(baseDataSetRelease[3],),location='STD')}
+#steps['VBFHToZZTo4Nu_M125_Pow_py8_Evt_13INPUT']={'INPUT':InputInfo(dataSet='/RelValVBFHToZZTo4Nu_M125_Pow_py8_Evt_13/%s/GEN-SIM'%(baseDataSetRelease[3],),location='STD')}
+#steps['VBFHToBB_M125_Pow_py8_Evt_13INPUT']={'INPUT':InputInfo(dataSet='/RelValVBFHToBB_M125_Pow_py8_Evt_13/%s/GEN-SIM'%(baseDataSetRelease[3],),location='STD')}
 
 
 #Sherpa
@@ -936,7 +983,7 @@ dataReco={ '--runUnscheduled':'',
           '--scenario':'pp',
           }
 
-dataRecoAlCaCalo=merge([{'-s':'RAW2DIGI,L1Reco,RECO,EI,ALCA:SiStripCalZeroBias+SiStripCalMinBias+TkAlMinBias+EcalCalZElectron+EcalCalWElectron+EcalUncalZElectron+EcalUncalWElectron+HcalCalIsoTrk,DQM'}, dataReco])
+dataRecoAlCaCalo=merge([{'-s':'RAW2DIGI,L1Reco,RECO,EI,ALCA:SiStripCalZeroBias+SiStripCalMinBias+TkAlMinBias+EcalCalZElectron+EcalCalWElectron+EcalUncalZElectron+EcalUncalWElectron+EcalTrg+HcalCalIsoTrk,DQM'}, dataReco])
 
 
 hltKey='fake'
@@ -963,11 +1010,16 @@ hltKey25ns='relval25ns'
 menuR2_25ns = autoHLT[hltKey25ns]
 steps['HLTDR2_25ns']=merge( [ {'-s':'L1REPACK:GT2,HLT:@%s'%hltKey25ns,},{'--conditions':'auto:run2_hlt_relval'},{'--era' : 'Run2_25ns'},steps['HLTD'] ] )
 
+hltKey2016='relval2016'
+menuR2_2016 = autoHLT[hltKey2016]
+steps['HLTDR2_2016']=merge( [ {'-s':'L1REPACK:Full,HLT:@%s'%hltKey2016,},{'--conditions':'auto:run2_hlt_relval'},{'--era' : 'Run2_2016'},steps['HLTD'] ] )
+steps['HLTDR2newL1repack_2016']=merge( [ {'-s':'L1REPACK:FullSimTP,HLT:@%s'%hltKey2016,},{'--conditions':'auto:run2_hlt_relval'},{'--era' : 'Run2_2016'},steps['HLTD'] ] )
+
 
 # custom function to be put back once the CSC tracked/untracked will have been fixed.. :-)
-steps['RECODR2_50ns']=merge([{'--scenario':'pp','--conditions':'auto:run2_data_relval','--customise':'Configuration/DataProcessing/RecoTLR.customiseDataRun2Common',},dataReco])
-steps['RECODR2_25ns']=merge([{'--scenario':'pp','--conditions':'auto:run2_data_relval','--customise':'Configuration/DataProcessing/RecoTLR.customiseDataRun2Common_25ns',},dataReco])
-
+steps['RECODR2_50ns']=merge([{'--scenario':'pp','--conditions':'auto:run2_data_relval','--era':'Run2_50ns',},dataReco])
+steps['RECODR2_25ns']=merge([{'--scenario':'pp','--conditions':'auto:run2_data_relval','--era':'Run2_25ns','--customise':'Configuration/DataProcessing/RecoTLR.customisePostEra_Run2_25ns'},dataReco])
+steps['RECODR2_2016']=merge([{'--scenario':'pp','--conditions':'auto:run2_data_relval','--era':'Run2_2016','--customise':'Configuration/DataProcessing/RecoTLR.customisePostEra_Run2_2016'},dataReco])
 
 steps['RECODR2AlCaEle']=merge([{'--scenario':'pp','--conditions':'auto:run2_data_relval','--customise':'Configuration/DataProcessing/RecoTLR.customisePromptRun2',},dataRecoAlCaCalo])
 
@@ -1025,6 +1077,8 @@ steps['RECOCOSD']=merge([{'--scenario':'cosmics',
                           '--customise':'Configuration/DataProcessing/RecoTLR.customiseCosmicData'
                           },dataReco])
 
+steps['RECOCOSDRUN2']=merge([{'--conditions':'auto:run2_data','--era':'Run2_2016'},steps['RECOCOSD']])
+
 step2HImixDefaults=merge([{'-n':'2', #too slow for 10 events/hour
                            '--pileup':'HiMix',                        
                            },hiDefaults,step1Up2015Defaults])
@@ -1058,7 +1112,7 @@ step3Up2015Defaults = {
 
 step3Up2015Defaults50ns = merge([{'-s':'RAW2DIGI,L1Reco,RECO,EI,PAT,VALIDATION:@standardValidation+@miniAODValidation,DQM:@standardDQMFakeHLT+@miniAODDQM','--conditions':'auto:run2_mc_50ns','--era':'Run2_50ns'},step3Up2015Defaults])
 
-step3Up2015DefaultsAlCaCalo = merge([{'-s':'RAW2DIGI,L1Reco,RECO,EI,ALCA:EcalCalZElectron+EcalCalWElectron+EcalUncalZElectron+EcalUncalWElectron+HcalCalIsoTrk,VALIDATION,DQM'},step3Up2015Defaults])
+step3Up2015DefaultsAlCaCalo = merge([{'-s':'RAW2DIGI,L1Reco,RECO,EI,ALCA:EcalCalZElectron+EcalCalWElectron+EcalUncalZElectron+EcalUncalWElectron+EcalTrg+HcalCalIsoTrk,VALIDATION,DQM'},step3Up2015Defaults])
 step3Up2015DefaultsAlCaCalo50ns = merge([{'--conditions':'auto:run2_mc_50ns','--era':'Run2_50ns'},step3Up2015DefaultsAlCaCalo])
 
 step3Up2015Hal = {'-s'            :'RAW2DIGI,L1Reco,RECO,EI,VALIDATION,DQM',
@@ -1085,7 +1139,17 @@ steps['RECODreHLTAlCaCalo']=merge([{'--hltProcess':'reHLT','--conditions':'auto:
 
 steps['RECODR2_25nsreHLT']=merge([{'--hltProcess':'reHLT'},steps['RECODR2_25ns']])
 steps['RECODR2_50nsreHLT']=merge([{'--hltProcess':'reHLT'},steps['RECODR2_50ns']])
+steps['RECODR2_2016reHLT']=merge([{'--hltProcess':'reHLT'},steps['RECODR2_2016']])
+steps['RECODR2newL1repack_2016reHLT']=merge([{'-s':'L1REPACK:FullSimTP,RAW2DIGI,L1Reco,RECO,EI,PAT,ALCA:SiStripCalZeroBias+SiStripCalMinBias+TkAlMinBias+EcalESAlign,DQM:@standardDQM+@miniAODDQM','--hltProcess':'reHLT'},steps['RECODR2_2016']])
 steps['RECODR2reHLTAlCaEle']=merge([{'--hltProcess':'reHLT','--conditions':'auto:run2_data_relval'},steps['RECODR2AlCaEle']])
+steps['RECODR2reHLTAlCaTkCosmics']=merge([{'--hltProcess':'reHLT','--conditions':'auto:run2_data_relval','-s':'RAW2DIGI,L1Reco,RECO,EI,PAT,ALCA:TkAlCosmicsInCollisions,DQM:@standardDQM+@miniAODDQM'},steps['RECODR2_2016']])
+
+steps['RECODR2_2016reHLT_skimSingleMu']=merge([{'-s':'RAW2DIGI,L1Reco,RECO,SKIM:ZMu+MuTau,EI,PAT,ALCA:SiStripCalZeroBias+SiStripCalMinBias+TkAlMinBias+EcalESAlign,DQM:@standardDQM+@miniAODDQM'},steps['RECODR2_2016reHLT']])
+steps['RECODR2_2016reHLT_skimDoubleEG']=merge([{'-s':'RAW2DIGI,L1Reco,RECO,SKIM:ZElectron,EI,PAT,ALCA:SiStripCalZeroBias+SiStripCalMinBias+TkAlMinBias+EcalESAlign,DQM:@standardDQM+@miniAODDQM'},steps['RECODR2_2016reHLT']])
+steps['RECODR2_2016reHLT_skimMuonEG']=merge([{'-s':'RAW2DIGI,L1Reco,RECO,SKIM:TopMuEG,EI,PAT,ALCA:SiStripCalZeroBias+SiStripCalMinBias+TkAlMinBias+EcalESAlign,DQM:@standardDQM+@miniAODDQM'},steps['RECODR2_2016reHLT']])
+steps['RECODR2_2016reHLT_skimJetHT']=merge([{'-s':'RAW2DIGI,L1Reco,RECO,SKIM:HighMET,EI,PAT,ALCA:SiStripCalZeroBias+SiStripCalMinBias+TkAlMinBias+EcalESAlign,DQM:@standardDQM+@miniAODDQM'},steps['RECODR2_2016reHLT']])
+steps['RECODR2_2016reHLT_skimMuOnia']=merge([{'-s':'RAW2DIGI,L1Reco,RECO,SKIM:BPHSkim,EI,PAT,ALCA:SiStripCalZeroBias+SiStripCalMinBias+TkAlMinBias+EcalESAlign,DQM:@standardDQM+@miniAODDQM'},steps['RECODR2_2016reHLT']])
+
 
 steps['RECO']=merge([step3Defaults])
 steps['RECOAlCaCalo']=merge([step3DefaultsAlCaCalo])
@@ -1167,6 +1231,9 @@ steps['ALCACOSD']={'--conditions':'auto:run1_data',
                    '--scenario':'cosmics',
                    '-s':'ALCA:TkAlCosmics0T+MuAlGlobalCosmics+HcalCalHOCosmics+DQM'
                    }
+
+steps['ALCACOSDRUN2']=merge([{'--conditions':'auto:run2_data','--era':'Run2_2016','-s':'ALCA:TkAlCosmics0T+MuAlGlobalCosmics+HcalCalHOCosmics+DtCalibCosmics+DQM'},steps['ALCACOSD']])
+
 steps['ALCAPROMPT']={'-s':'ALCA:PromptCalibProd',
                      '--filein':'file:TkAlMinBias.root',
                      '--conditions':'auto:run1_data',
@@ -1188,7 +1255,7 @@ step4Defaults = {
                   '--eventcontent': 'ALCARECO',
                   }
 step4Up2015Defaults = { 
-                        '-s'            : 'ALCA:TkAlMuonIsolated+TkAlMinBias+MuAlOverlaps+EcalESAlign',
+                        '-s'            : 'ALCA:TkAlMuonIsolated+TkAlMinBias+MuAlOverlaps+EcalESAlign+EcalTrg',
                         '-n'            : 1000,
                         '--conditions'  : 'auto:run2_mc',
                         '--era'         : 'Run2_2016',
@@ -1213,34 +1280,45 @@ steps['ALCAHARVD']={'-s':'ALCAHARVEST:BeamSpotByRun+BeamSpotByLumi+SiStripQualit
                     '--data':'',
                     '--filein':'file:PromptCalibProd.root'}
 
-
-steps['ALCAHARVD1']={'-s':'ALCAHARVEST:BeamSpotByRun+BeamSpotByLumi+SiStripQuality',
-                    '--conditions':'auto:run1_data',
-                    '--scenario':'pp',
-                    '--data':'',
-                    '--filein':'file:PromptCalibProd.root'}
+steps['ALCAHARVD1']={'-s':'ALCAHARVEST:%s'%(autoPCL['PromptCalibProd']),
+                     '--conditions':'auto:run1_data',
+                     '--scenario':'pp',
+                     '--data':'',
+                     '--filein':'file:PromptCalibProd.root'}
 steps['ALCAHARVD1HI']=merge([{'--scenario':'HeavyIons'},steps['ALCAHARVD1']])
 
-steps['ALCAHARVD2']={'-s':'ALCAHARVEST:SiStripQuality',
-                    '--conditions':'auto:run1_data',
-                    '--scenario':'pp',
-                    '--data':'',
-                    '--filein':'file:PromptCalibProdSiStrip.root'}
+steps['ALCAHARVD2']={'-s':'ALCAHARVEST:%s'%(autoPCL['PromptCalibProdSiStrip']),
+                     '--conditions':'auto:run1_data',
+                     '--scenario':'pp',
+                     '--data':'',
+                     '--filein':'file:PromptCalibProdSiStrip.root'}
+
 steps['ALCAHARVD2HI']=merge([{'--scenario':'HeavyIons'},steps['ALCAHARVD2']])
 
-steps['ALCAHARVD3']={'-s':'ALCAHARVEST:SiStripGains+SiStripGainsAfterAbortGap',
-                    '--conditions':'auto:run1_data',
-                    '--scenario':'pp',
-                    '--data':'',
-                    '--filein':'file:PromptCalibProdSiStripGains.root'}
+steps['ALCAHARVD3']={'-s':'ALCAHARVEST:%s'%(autoPCL['PromptCalibProdSiStripGains']),
+                     '--conditions':'auto:run1_data',
+                     '--scenario':'pp',
+                     '--data':'',
+                     '--filein':'file:PromptCalibProdSiStripGains.root'}
+
 steps['ALCAHARVD3HI']=merge([{'--scenario':'HeavyIons'},steps['ALCAHARVD3']])
 
-steps['ALCAHARVD4']={'-s':'ALCAHARVEST:SiPixelAli',
-                    '--conditions':'auto:run1_data',
-                    '--scenario':'pp',
-                    '--data':'',
-                    '--filein':'file:PromptCalibProdSiPixelAli.root'}
+steps['ALCAHARVD4']={'-s':'ALCAHARVEST:%s'%(autoPCL['PromptCalibProdSiPixelAli']),
+                     '--conditions':'auto:run1_data',
+                     '--scenario':'pp',
+                     '--data':'',
+                     '--filein':'file:PromptCalibProdSiPixelAli.root'}
+
 steps['ALCAHARVD4HI']=merge([{'--scenario':'HeavyIons'},steps['ALCAHARVD4']])
+
+steps['ALCAHARVD5']={'-s':'ALCAHARVEST:%s'%(autoPCL['PromptCalibProdSiStripGainsAfterAbortGap']),
+                     '--conditions':'auto:run1_data',
+                     '--scenario':'pp',
+                     '--data':'',
+                     '--filein':'file:PromptCalibProdSiStripGainsAfterAbortGap.root'}
+
+steps['ALCAHARVD5HI']=merge([{'--scenario':'HeavyIons'},steps['ALCAHARVD5']])
+
 
 steps['RECOHISt4']=steps['RECOHI']
 steps['RECOHIMIX']=merge([steps['RECOHI'],{'--pileup':'HiMix','--pileup_input':'das:/RelValHydjetQ_MinBias_5020GeV/%s/GEN-SIM'%(baseDataSetRelease[9])}])
@@ -1273,8 +1351,7 @@ steps['HARVESTDR1']={'-s':'HARVESTING:@standardDQMFakeHLT+@miniAODDQM',
 
 steps['HARVESTDreHLT'] = merge([ {'--conditions':'auto:run1_data_%s'%menu}, steps['HARVESTD'] ])
 steps['HARVESTDR1reHLT'] = merge([ {'--conditions':'auto:run1_data_%s'%menu}, steps['HARVESTDR1'] ])
-steps['HARVESTDR2_50nsreHLT'] = merge([ {'--conditions':'auto:run2_data_relval'}, steps['HARVESTD'] ])
-steps['HARVESTDR2_25nsreHLT'] = merge([ {'--conditions':'auto:run2_data_relval'}, steps['HARVESTD'] ])
+steps['HARVESTDR2'] = merge([ {'--conditions':'auto:run2_data_relval'}, steps['HARVESTD'] ])
 
 steps['HARVESTDDQM']=merge([{'-s':'HARVESTING:@common+@muon+@hcal+@jetmet+@ecal'},steps['HARVESTD']])
 
@@ -1286,6 +1363,9 @@ steps['HARVESTDC']={'-s':'HARVESTING:dqmHarvesting',
                    '--data':'',
                     '--filein':'file:step2_inDQM.root',
                    '--scenario':'cosmics'}
+
+steps['HARVESTDCRUN2']=merge([{'--conditions':'auto:run2_data','--era':'Run2_2016'},steps['HARVESTDC']])
+
 steps['HARVESTDHI']={'-s':'HARVESTING:dqmHarvesting',
                    '--conditions':'auto:run1_data',
                    '--filetype':'DQM',
