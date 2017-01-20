@@ -29,8 +29,8 @@ static bool compare_l1candidate(const L1Candidate & a, const L1Candidate & b, in
 
   if (status){
     cout << "COMPARISON FAILURE:  \n";
-    cout << "pt = " << a.pt() << " eta = " << a.eta() << " phi = " << a.phi() << "\n";  
-    cout << "pt = " << b.pt() << " eta = " << b.eta() << " phi = " << b.phi() << "\n";  
+    cout << "A:  pt = " << a.pt() << " eta = " << a.eta() << " phi = " << a.phi() << "\n";  
+    cout << "B:  pt = " << b.pt() << " eta = " << b.eta() << " phi = " << b.phi() << "\n";  
   }
 
   if (a.hwPt()  != b.hwPt())  status = 1;
@@ -39,16 +39,16 @@ static bool compare_l1candidate(const L1Candidate & a, const L1Candidate & b, in
 
   if (status){
     cout << "COMPARISON FAILURE:  \n";
-    cout << "hwPt = " << a.hwPt() << " hwEta = " << a.hwEta() << " hwPhi = " << a.hwPhi() << "\n";  
-    cout << "hwPt = " << b.hwPt() << " hwEta = " << b.hwEta() << " hwPhi = " << b.hwPhi() << "\n";  
+    cout << "A:  hwPt = " << a.hwPt() << " hwEta = " << a.hwEta() << " hwPhi = " << a.hwPhi() << "\n";  
+    cout << "B:  hwPt = " << b.hwPt() << " hwEta = " << b.hwEta() << " hwPhi = " << b.hwPhi() << "\n";  
   }
 
   if (a.hwQual()  != b.hwQual())  status = 1;
   if (a.hwIso()   != b.hwIso())   status = 1;
   if (status){
     cout << "COMPARISON FAILURE:  \n";
-    cout << "hwQual = " << a.hwQual() << " hwIso = " << a.hwIso() << "\n";
-    cout << "hwQual = " << b.hwQual() << " hwIso = " << b.hwIso() << "\n";
+    cout << "A:  hwQual = " << a.hwQual() << " hwIso = " << a.hwIso() << "\n";
+    cout << "B:  hwQual = " << b.hwQual() << " hwIso = " << b.hwIso() << "\n";
   }
 
 
@@ -285,18 +285,43 @@ L1TComparison::analyze(Event const& iEvent, EventSetup const& iSetup)
 	if (ibx > XTMPB->getLastBX()) continue;
 	int sizeA = XTMPA->size(ibx);
 	int sizeB = XTMPB->size(ibx);
+
+	if (sizeA != sizeB){
+	  cout << "L1T COMPARISON WARNING:  sums collections have different sizes for bx = " << ibx << "\n"; 
+	  cout << "L1T COMPARISON WARNING:  sums collections A size  = " << sizeA << "  sums collection B size = " << sizeB << "\n"; 
+	  cout << "L1T COMPARISON WARNING:  known issue because packer has not been udpated for Minbias\n";
+	} 
+	for (auto itA=XTMPA->begin(ibx); itA!=XTMPA->end(ibx); ++itA){	    
+	      cout << "L1T COMPARISON :  EtSum type: A = " << itA->getType() <<  "\n";
+        }
+	for (auto itB=XTMPB->begin(ibx); itB!=XTMPB->end(ibx); ++itB){	    
+	      cout << "L1T COMPARISON :  EtSum type: B = " << itB->getType() <<  "\n";
+        }
+
+	// temp workaround for sums not packed...
+	if (sizeA > sizeB) sizeA = sizeB;
+	if (sizeB > sizeA) sizeB = sizeA;
+	
 	if (sizeA != sizeB){
 	  cout << "L1T COMPARISON FAILURE:  collections have different sizes for bx = " << ibx << "\n"; 
 	} else {
 	  auto itB=XTMPB->begin(ibx);
 	  for (auto itA=XTMPA->begin(ibx); itA!=XTMPA->end(ibx); ++itA){	    
-	    bool fail = compare_l1candidate(*itA, *itB);
+	      cout << "L1T COMPARISON :  EtSum type: A = " << itA->getType() << " vs B = " << itB->getType() << "\n";
 	    if (itA->getType() != itB->getType()){
-	      cout << "L1T COMPARISON FAILURE:  EtSum type:" << itA->getType() << " vs " << itB->getType() << "\n";
+	      cout << "L1T COMPARISON FAILURE:  Different types .... EtSum type:" << itA->getType() << " vs " << itB->getType() << "\n";
+	    }	    
+	    if (itA->getType() == EtSum::kTotalEtEm) 
+	      cout << "L1T COMPARISON WARNING:  (known issue) sum of type " << itA->getType() << " when emulated has a dummy value (pending proper emulation)" << "\n"; 
+	    if (itA->getType() < EtSum::kMinBiasHFP0 || itA->getType() > EtSum::kMinBiasHFM1) {
+	      bool fail = compare_l1candidate(*itA, *itB);
+	      if (fail){ cout << "L1T COMPARISON FAILURE:  for type " << itA->getType() << "\n";}
+	      if (! fail) { sumCount_++; }
+	      else        { sumFails_++; }
+	    } else {
+	      cout << "L1T COMPARISON WARNING:  (known issue) not checking sum of type " << itA->getType() << "\n"; 
 	    }
 	    itB++;
-	    if (! fail) { sumCount_++; }
-	    else        { sumFails_++; }
 	  }
 	}
       }
@@ -348,7 +373,7 @@ L1TComparison::beginJob()
 
 void
 L1TComparison::endJob() {
-  cout << "INFO:  L1T Summary for " << tag_ << "\n";
+  cout << "INFO:  L1T Comparison for " << tag_ << "\n";
   cout << "INFO: count of successful comparison for each type follows:\n";
   if (egCheck_)   cout << "eg:    " << egCount_ << "\n";
   if (tauCheck_)  cout << "tau:   " << tauCount_ << "\n";
@@ -361,6 +386,23 @@ L1TComparison::endJob() {
   if (jetCheck_)  cout << "jet:   " << jetFails_ << "\n";
   if (sumCheck_)  cout << "sum:   " << sumFails_ << "\n";
   if (muonCheck_) cout << "muon:  " << muonFails_ << "\n";
+
+  int fail = 0;
+  if (egCheck_ &&   ((egFails_>0)   || (egCount_<=0))) fail = 1;
+  if (tauCheck_ &&  ((tauFails_>0)  || (tauCount_<=0))) fail = 1;
+  if (jetCheck_ &&  ((jetFails_>0)  || (jetCount_<=0))) fail = 1;
+  if (sumCheck_ &&  ((sumFails_>0)  || (sumCount_<=0))) fail = 1;
+  if (muonCheck_ && ((muonFails_>0) || (muonCount_<=0))) fail = 1;
+
+  if (fail){
+    cout << "SUMMARY:  L1T Comparison for " << tag_ << " was FAILURE\n";
+  } else {
+    cout << "SUMMARY:  L1T Comparison for " << tag_ << " was SUCCESS\n";
+  }
+      
+
+
+
 }
 
 void

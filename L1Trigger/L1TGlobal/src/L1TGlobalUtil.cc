@@ -10,6 +10,8 @@
 
 #include "CondFormats/DataRecord/interface/L1TUtmTriggerMenuRcd.h"
 #include "CondFormats/L1TObjects/interface/L1TUtmTriggerMenu.h"
+#include "CondFormats/DataRecord/interface/L1TGlobalPrescalesVetosRcd.h"
+#include "CondFormats/L1TObjects/interface/L1TGlobalPrescalesVetos.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -28,11 +30,32 @@
 l1t::L1TGlobalUtil::L1TGlobalUtil(){
     // initialize cached IDs
     m_l1GtMenuCacheID = 0ULL;
+    m_l1GtPfAlgoCacheID = 0ULL;
     m_filledPrescales = false;
+    m_algorithmTriggersUnprescaled = true;
+    m_algorithmTriggersUnmasked = true;
+
     edm::FileInPath f1("L1Trigger/L1TGlobal/data/Luminosity/startup/prescale_L1TGlobal.csv");
     m_preScaleFileName = f1.fullPath();
     m_numberPhysTriggers = 512; //need to get this out of the EventSetup
     m_PreScaleColumn = 1;
+
+}
+
+l1t::L1TGlobalUtil::L1TGlobalUtil(edm::ParameterSet const& pset,
+				  edm::ConsumesCollector&& iC) :
+  L1TGlobalUtil(pset, iC) { }
+
+l1t::L1TGlobalUtil::L1TGlobalUtil(edm::ParameterSet const& pset,
+				  edm::ConsumesCollector& iC) :
+  L1TGlobalUtil() {
+  m_l1tGlobalUtilHelper.reset(new L1TGlobalUtilHelper(pset, iC));
+}
+
+// destructor
+l1t::L1TGlobalUtil::~L1TGlobalUtil() {
+
+  // empty
 
 }
 
@@ -42,23 +65,22 @@ void l1t::L1TGlobalUtil::OverridePrescalesAndMasks(std::string filename, unsigne
   m_PreScaleColumn = psColumn;
 }
 
-// destructor
-l1t::L1TGlobalUtil::~L1TGlobalUtil() { 
+void l1t::L1TGlobalUtil::retrieveL1(const edm::Event& iEvent, const edm::EventSetup& evSetup) {
+  // typically, the L1T menu and prescale table (may change only between Runs)
+  retrieveL1Setup(evSetup);
+  // typically the prescale set index used and the event by event accept/reject info (changes between Events)
+  retrieveL1Event(iEvent,evSetup);
 }
 
 void l1t::L1TGlobalUtil::retrieveL1(const edm::Event& iEvent, const edm::EventSetup& evSetup,
                                     edm::EDGetToken gtAlgToken) {
-
-  // typically, the L1T menu (may change only between Runs)
-  retrieveL1Run(evSetup);
-  // typically the L1T prescales and index of specific prescale set used (may change only between LumiBlocks)
-  retrieveL1LumiBlock(evSetup);
-  // typically the event by event accept/reject info (changes between Events)
+  // typically, the L1T menu and prescale table (may change only between Runs)
+  retrieveL1Setup(evSetup);
+  // typically the prescale set index used and the event by event accept/reject info (changes between Events)
   retrieveL1Event(iEvent,evSetup,gtAlgToken);
-
 }
 
-void l1t::L1TGlobalUtil::retrieveL1Run(const edm::EventSetup& evSetup) {
+void l1t::L1TGlobalUtil::retrieveL1Setup(const edm::EventSetup& evSetup) {
 
     // get / update the trigger menu from the EventSetup
     // local cache & check on cacheIdentifier
@@ -78,9 +100,6 @@ void l1t::L1TGlobalUtil::retrieveL1Run(const edm::EventSetup& evSetup) {
 	
 	m_l1GtMenuCacheID = l1GtMenuCacheID;
     }
-}
-
-void l1t::L1TGlobalUtil::retrieveL1LumiBlock(const edm::EventSetup& evSetup) {
 
     // Fill the mask and prescales (dummy for now)
     if(!m_filledPrescales) {
@@ -89,14 +108,30 @@ void l1t::L1TGlobalUtil::retrieveL1LumiBlock(const edm::EventSetup& evSetup) {
        resetPrescaleVectors();
        resetMaskVectors();
 
-       //Load the full prescale set for use
-       loadPrescalesAndMasks();
+       // Only get event record if not unprescaled and not unmasked
+       if( !( m_algorithmTriggersUnprescaled && m_algorithmTriggersUnmasked ) ){
+	 unsigned long long l1GtPfAlgoCacheID = evSetup.get<L1TGlobalPrescalesVetosRcd>().cacheIdentifier();
 
-       // Set Prescale factors to initial (This is somewhat stupid...should fix up)
-       m_prescaleFactorsAlgoTrig = &m_initialPrescaleFactorsAlgoTrig;
-       m_triggerMaskAlgoTrig = &m_initialTriggerMaskAlgoTrig;
-       m_triggerMaskVetoAlgoTrig = &m_initialTriggerMaskVetoAlgoTrig;
-       
+	 if (m_l1GtPfAlgoCacheID != l1GtPfAlgoCacheID) {
+	             edm::ESHandle< L1TGlobalPrescalesVetos > l1GtPrescalesVetoes;
+	             evSetup.get< L1TGlobalPrescalesVetosRcd >().get( l1GtPrescalesVetoes );
+	             const L1TGlobalPrescalesVetos * es = l1GtPrescalesVetoes.product();
+	             m_l1GtPrescalesVetoes = PrescalesVetosHelper::readFromEventSetup(es);
+		     
+		     m_prescaleFactorsAlgoTrig = &(m_l1GtPrescalesVetoes->prescaleTable());
+		     m_triggerMaskVetoAlgoTrig = &(m_l1GtPrescalesVetoes->triggerMaskVeto());
+		     
+		     m_l1GtPfAlgoCacheID = l1GtPfAlgoCacheID;
+         }
+       } else {
+	 //Load the full prescale set for use
+	 loadPrescalesAndMasks();
+ 
+	 // Set Prescale factors to initial
+	 m_prescaleFactorsAlgoTrig = &m_initialPrescaleFactorsAlgoTrig;
+	 m_triggerMaskAlgoTrig = &m_initialTriggerMaskAlgoTrig;
+	 m_triggerMaskVetoAlgoTrig = &m_initialTriggerMaskVetoAlgoTrig;
+       }
 
        //Pick which set we are using
        if(m_PreScaleColumn > m_prescaleFactorsAlgoTrig->size() || m_PreScaleColumn < 1) {	  
@@ -109,7 +144,19 @@ void l1t::L1TGlobalUtil::retrieveL1LumiBlock(const edm::EventSetup& evSetup) {
        }
        LogDebug("l1t|Global") << "Grabing prescale column "<< m_PreScaleColumn << endl;
        const std::vector<int>& prescaleSet = (*m_prescaleFactorsAlgoTrig)[m_PreScaleColumn-1];
-           
+       
+       // If masks or prescales enabled, get mask decision from prescale column
+       if( !( m_algorithmTriggersUnprescaled && m_algorithmTriggersUnmasked ) ){
+	 // For now, set masks according to prescale value of 0
+	 m_initialTriggerMaskAlgoTrig.clear();
+	 for( unsigned int iAlgo=0; iAlgo < prescaleSet.size(); iAlgo++ ){
+	   unsigned int value = prescaleSet[iAlgo];
+	   value = ( value==0 ) ? 0 : 1;
+	   m_initialTriggerMaskAlgoTrig.push_back(value);
+	 }
+	 m_triggerMaskAlgoTrig = &m_initialTriggerMaskAlgoTrig;
+       }
+               
        for (std::map<std::string, L1TUtmAlgorithm>::const_iterator itAlgo = m_algorithmMap->begin(); itAlgo != m_algorithmMap->end(); itAlgo++) {
 
           // Get the algorithm name
@@ -130,6 +177,10 @@ void l1t::L1TGlobalUtil::retrieveL1LumiBlock(const edm::EventSetup& evSetup) {
     }
 }
 
+void l1t::L1TGlobalUtil::retrieveL1Event(const edm::Event& iEvent, const edm::EventSetup& evSetup) {
+  retrieveL1Event(iEvent, evSetup, m_l1tGlobalUtilHelper->l1tAlgBlkToken());
+}
+
 void l1t::L1TGlobalUtil::retrieveL1Event(const edm::Event& iEvent, const edm::EventSetup& evSetup,
 					 edm::EDGetToken gtAlgToken) {
 
@@ -141,37 +192,37 @@ void l1t::L1TGlobalUtil::retrieveL1Event(const edm::Event& iEvent, const edm::Ev
      if(m_uGtAlgBlk.isValid()) {
        // get the GlabalAlgBlk (Stupid find better way) of BX=0
        std::vector<GlobalAlgBlk>::const_iterator algBlk = m_uGtAlgBlk->begin(0);     
-
-       // Grab the final OR from the AlgBlk,       
-       m_finalOR = algBlk->getFinalOR();
+       if (algBlk != m_uGtAlgBlk->end(0)){
+	 m_PreScaleColumn = static_cast<unsigned int>(algBlk->getPreScColumn());
+	 // Grab the final OR from the AlgBlk,       
+	 m_finalOR = algBlk->getFinalOR();
        
-       // Make a map of the trigger name and whether it passed various stages (initial,prescale,final)
-       // Note: might be able to improve performance by not full remaking map with names each time
-       for (std::map<std::string, L1TUtmAlgorithm>::const_iterator itAlgo = m_algorithmMap->begin(); itAlgo != m_algorithmMap->end(); itAlgo++) {
+	 // Make a map of the trigger name and whether it passed various stages (initial,prescale,final)
+	 // Note: might be able to improve performance by not full remaking map with names each time
+	 for (std::map<std::string, L1TUtmAlgorithm>::const_iterator itAlgo = m_algorithmMap->begin(); itAlgo != m_algorithmMap->end(); itAlgo++) {
 
-	 // Get the algorithm name
-	 std::string algName = itAlgo->first;
-	 int algBit = (itAlgo->second).getIndex(); //algoBitNumber();
+	   // Get the algorithm name
+	   std::string algName = itAlgo->first;
+	   int algBit = (itAlgo->second).getIndex(); //algoBitNumber();
+	   
+	   bool decisionInitial   = algBlk->getAlgoDecisionInitial(algBit);
+	   (m_decisionsInitial[algBit]).first  = algName;
+	   (m_decisionsInitial[algBit]).second = decisionInitial;
+	   
+	   bool decisionInterm = algBlk->getAlgoDecisionInterm(algBit); 
+	   (m_decisionsInterm[algBit]).first  = algName;
+	   (m_decisionsInterm[algBit]).second = decisionInterm;
 
-	 bool decisionInitial   = algBlk->getAlgoDecisionInitial(algBit);
-	 (m_decisionsInitial[algBit]).first  = algName;
-	 (m_decisionsInitial[algBit]).second = decisionInitial;
-
-	 bool decisionPrescaled = algBlk->getAlgoDecisionPreScaled(algBit);
-	 (m_decisionsPrescaled[algBit]).first  = algName;
-	 (m_decisionsPrescaled[algBit]).second = decisionPrescaled;
-
-	 bool decisionFinal     = algBlk->getAlgoDecisionFinal(algBit);
-	 (m_decisionsFinal[algBit]).first  = algName;
-	 (m_decisionsFinal[algBit]).second = decisionFinal;
-      
+	   bool decisionFinal     = algBlk->getAlgoDecisionFinal(algBit);
+	   (m_decisionsFinal[algBit]).first  = algName;
+	   (m_decisionsFinal[algBit]).second = decisionFinal;
+	 }
+       } else {
+	 //cout << "Error empty AlgBlk recovered.\n";
        }
      } else {
-
-       cout
-	 << "Error no valid uGT Algorithm Data with Token provided " << endl;
-     }
-    
+       //cout<< "Error no valid uGT Algorithm Data with Token provided " << endl;
+     }   
 }
 
 void l1t::L1TGlobalUtil::loadPrescalesAndMasks() {
@@ -183,7 +234,7 @@ void l1t::L1TGlobalUtil::loadPrescalesAndMasks() {
     std::vector<std::vector<int> > prescale_vec;
 
     std::vector<unsigned int> temp_triggerMask;
-    std::vector<unsigned int> temp_triggerVetoMask;
+    std::vector<int> temp_triggerVetoMask;
 
     if( inputPrescaleFile ){
       std::string prefix1("#");
@@ -258,7 +309,7 @@ void l1t::L1TGlobalUtil::loadPrescalesAndMasks() {
 //	      cout << "Settting Mask for bit " << algoBit << " to " << triggerMask << endl;
 	    }
 	    if( maskVetoColumn>=0 ){
-	      unsigned int triggerVetoMask = vec[maskVetoColumn][iBit];
+	      int triggerVetoMask = vec[maskVetoColumn][iBit];
 	      temp_triggerVetoMask[algoBit] = triggerVetoMask;
 	    }
 	  }
@@ -336,8 +387,8 @@ void l1t::L1TGlobalUtil::resetDecisionVectors() {
   // Reset all the vector contents with null information
   m_decisionsInitial.clear();
   m_decisionsInitial.resize(m_numberPhysTriggers);
-  m_decisionsPrescaled.clear();
-  m_decisionsPrescaled.resize(m_numberPhysTriggers);
+  m_decisionsInterm.clear();
+  m_decisionsInterm.resize(m_numberPhysTriggers);
   m_decisionsFinal.clear();
   m_decisionsFinal.resize(m_numberPhysTriggers);
   
@@ -347,8 +398,8 @@ void l1t::L1TGlobalUtil::resetDecisionVectors() {
     (m_decisionsInitial[algBit]).first = "NULL";
     (m_decisionsInitial[algBit]).second = false;
 
-    (m_decisionsPrescaled[algBit]).first = "NULL";
-    (m_decisionsPrescaled[algBit]).second = false;
+    (m_decisionsInterm[algBit]).first = "NULL";
+    (m_decisionsInterm[algBit]).second = false;
     
     (m_decisionsFinal[algBit]).first = "NULL";
     (m_decisionsFinal[algBit]).second = false;    
@@ -430,11 +481,11 @@ const bool l1t::L1TGlobalUtil::getInitialDecisionByBit(int& bit, bool& decision)
   
   return false;  //couldn't get the information requested. 
 }
-const bool l1t::L1TGlobalUtil::getPrescaledDecisionByBit(int& bit, bool& decision) const {
+const bool l1t::L1TGlobalUtil::getIntermDecisionByBit(int& bit, bool& decision) const {
 
   // Need some check that this is a valid bit
-  if((m_decisionsPrescaled[bit]).first != "NULL") {
-    decision = (m_decisionsPrescaled[bit]).second;
+  if((m_decisionsInterm[bit]).first != "NULL") {
+    decision = (m_decisionsInterm[bit]).second;
     return true;
   }
   
@@ -493,11 +544,11 @@ const bool l1t::L1TGlobalUtil::getInitialDecisionByName(const std::string& algNa
   return false;  //trigger name was not the menu. 
 }
 
-const bool l1t::L1TGlobalUtil::getPrescaledDecisionByName(const std::string& algName, bool& decision) const {
+const bool l1t::L1TGlobalUtil::getIntermDecisionByName(const std::string& algName, bool& decision) const {
 
   int bit = -1;
   if(getAlgBitFromName(algName,bit)) {
-    decision = (m_decisionsPrescaled[bit]).second;
+    decision = (m_decisionsInterm[bit]).second;
     return true;
   }
   

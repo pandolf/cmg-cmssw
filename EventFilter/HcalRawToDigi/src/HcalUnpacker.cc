@@ -8,6 +8,7 @@
 #include "DataFormats/HcalDigi/interface/HcalQIESample.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "EventFilter/HcalRawToDigi/interface/HcalTTPUnpacker.h"
+#include "EventFilter/HcalRawToDigi/plugins/HcalRawToDigi.h"
 
 //#define DebugLog
 
@@ -588,6 +589,10 @@ void HcalUnpacker::unpackUTCA(const FEDRawData& raw, const HcalElectronicsMap& e
     int nps=(amc13->AMCId(iamc)>>12)&0xF;
     
     HcalUHTRData uhtr(amc13->AMCPayload(iamc),amc13->AMCSize(iamc));
+    //Check to make sure uMNio is not unpacked here
+    if(uhtr.getFormatVersion() != 1) {
+      unpackUMNio(raw, slot, colls);
+    }  
 #ifdef DebugLog
     //debug printouts
     int nwords=uhtr.getRawLengthBytes()/2;
@@ -602,11 +607,11 @@ void HcalUnpacker::unpackUTCA(const FEDRawData& raw, const HcalElectronicsMap& e
 #endif
 
       if (!i.isHeader()) {
-	++i;
+	    ++i;
 #ifdef DebugLog
-	std::cout << "its not a header" << std::endl;
+	    std::cout << "its not a header" << std::endl;
 #endif
-	continue;
+	    continue;
       }
       ///////////////////////////////////////////////HE UNPACKER//////////////////////////////////////////////////////////////////////////////////////
       if (i.flavor() == 1 || i.flavor() == 0) {
@@ -647,10 +652,9 @@ void HcalUnpacker::unpackUTCA(const FEDRawData& raw, const HcalElectronicsMap& e
               std::cout << "OH NO! detector id is null!" << std::endl;
 #endif
           }
-      }
-
+      } else if (i.flavor() == 2){
       //////////////////////////////////////////////////HF UNPACKER/////////////////////////////////////////////////////////////////////
-      if (i.flavor() == 2) {
+
 	int ifiber=((i.channelid()>>3)&0x1F);
 	int ichan=(i.channelid()&0x7);
 	HcalElectronicsId eid(crate,slot,ifiber,ichan, false);
@@ -664,6 +668,15 @@ void HcalUnpacker::unpackUTCA(const FEDRawData& raw, const HcalElectronicsMap& e
 	}
 
 	// Check QEI10 container exists
+	if (colls.qie10ZDC == 0) {
+	  colls.qie10ZDC = new QIE10DigiCollection(ns);
+	}
+	else if (colls.qie10ZDC->samples() != ns) {
+	  // This is horrible
+	  edm::LogError("Invalid Data") << "Collection has " << colls.qie10ZDC->samples() << " samples per digi, raw data has " << ns << "!";
+	  return;
+	}
+	
 	if (colls.qie10 == 0) {
 	  colls.qie10 = new QIE10DigiCollection(ns);
 	}
@@ -675,7 +688,10 @@ void HcalUnpacker::unpackUTCA(const FEDRawData& raw, const HcalElectronicsMap& e
 
 	// Insert data
     /////////////////////////////////////////////CODE FROM OLD STYLE DIGIS///////////////////////////////////////////////////////////////
-	if (!did.null()) { // unpack and store...
+	if (!did.null() && did.det()==DetId::Calo && did.subdetId()==HcalZDCDetId::SubdetectorId) { // unpack and store...
+		colls.qie10ZDC->addDataFrame(did, head_pos);
+	} 
+	else if (!did.null()) { // unpack and store...
 		colls.qie10->addDataFrame(did, head_pos);
 	} else {
 		report.countUnmappedDigi(eid);
@@ -696,7 +712,7 @@ void HcalUnpacker::unpackUTCA(const FEDRawData& raw, const HcalElectronicsMap& e
 	int ichan=(i.channelid()&0x3);
 	HcalElectronicsId eid(crate,slot,ifiber,ichan, false);
 	DetId did=emap.lookup(eid);
-	
+
 	if (!did.null()) { // unpack and store...
 	  if (did.det()==DetId::Calo && did.subdetId()==HcalZDCDetId::SubdetectorId) {
 	    colls.zdcCont->push_back(ZDCDataFrame(HcalZDCDetId(did)));
@@ -794,7 +810,9 @@ HcalUnpacker::Collections::Collections() {
   calibCont=0;
   ttp=0;
   qie10=0;
+  qie10ZDC=0;
   qie11=0;
+  umnio=0;
 }
 
 void HcalUnpacker::unpack(const FEDRawData& raw, const HcalElectronicsMap& emap, std::vector<HcalHistogramDigi>& histoDigis) {
@@ -854,5 +872,20 @@ void HcalUnpacker::unpack(const FEDRawData& raw, const HcalElectronicsMap& emap,
       }
     }
   }
-}      
-
+}
+// Method to unpack uMNio data
+void HcalUnpacker::unpackUMNio(const FEDRawData& raw, int slot, Collections& colls) {
+  const hcal::AMC13Header* amc13=(const hcal::AMC13Header*)(raw.data());
+  int namc=amc13->NAMC();
+  //Find AMC corresponding to uMNio slot
+  for (int iamc=0; iamc<namc; iamc++) {
+    if (amc13->AMCSlot(iamc) == slot) namc = iamc;
+  }
+  if (namc==amc13->NAMC()) {
+    return;
+  }
+  const uint16_t* data = (const uint16_t*)(amc13->AMCPayload(namc));
+  size_t nwords = amc13->AMCSize(namc) * ( sizeof(uint64_t) / sizeof(uint16_t) );
+  *(colls.umnio) = HcalUMNioDigi(data, nwords);
+  
+}

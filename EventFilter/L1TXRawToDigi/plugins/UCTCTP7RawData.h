@@ -157,13 +157,12 @@ public:
     return et;
   }
 
-  bool getFB(CaloType cType, bool negativeEta, uint32_t cEta, uint32_t iPhi) {
+  uint32_t getFB(CaloType cType, bool negativeEta, uint32_t cEta, uint32_t iPhi) {
     uint32_t index = getFeatureIndex(cType, negativeEta, cEta, iPhi);
     const uint32_t data = myDataPtr[index];
-    bool fb = false;
+    uint32_t fb = 0;
     if(cType == HF) {
-      // Two bits are expected from HF - this is interface to get one compressed bit!
-      fb = (getHFFeatureBits(negativeEta, cEta, iPhi) != 0);
+      fb = getHFFeatureBits(negativeEta, cEta, iPhi);
     }
     else {
       // Pick out the correct bit for the tower chosen
@@ -171,7 +170,7 @@ public:
       if(((cEta - 1) % 2) == 1) {
 	tower += 4;
       }
-      fb = ((data & (0x1 << tower)) != 0);
+      fb = ((data & (0x1 << tower)) != 0) ? 1 : 0;
     }
     return fb;
   }
@@ -191,16 +190,16 @@ public:
     return (data >> 16);
   }
 
-  uint32_t getSummaryIndex(bool negativeEta) {
-    uint32_t index = 2 + 2 * 14 * (3 + 3) + 4 * 4;
-    if(negativeEta) index++;
+  uint32_t getSummaryIndex(bool negativeEta, uint32_t region) {
+    uint32_t index = 2 + 2 * 14 * (3 + 3) + 4 * 4 + (region / 2);
+    if(negativeEta) index += 4;
     return index;
   }
 
   uint32_t getRegionSummary(bool negativeEta, uint32_t region) {
-    uint32_t index = getSummaryIndex(negativeEta);
+    uint32_t index = getSummaryIndex(negativeEta, region);
     const uint32_t data = myDataPtr[index];
-    return (data >> (16 * (region % 2)));
+    return ((data >> (16 * (region % 2))) & 0xFFFF);
   }
 
   uint32_t getRegionET(bool negativeEta, uint32_t region) {
@@ -232,29 +231,41 @@ public:
 
   bool isLinkMisaligned(CaloType cType, bool negativeEta, uint32_t cEta, uint32_t iPhi) {
     uint32_t linkStatus = getLinkStatus(cType, negativeEta, cEta, iPhi);
+    if ( cType == EBEE && (cEta==17||cEta==21) ) {
+      return ((linkStatus & 0x00000100) != 0);
+    }
     return ((linkStatus & 0x00001000) != 0);
   }
 
   bool isLinkInError(CaloType cType, bool negativeEta, uint32_t cEta, uint32_t iPhi) {
     uint32_t linkStatus = getLinkStatus(cType, negativeEta, cEta, iPhi);
+    if ( cType == EBEE && (cEta==17||cEta==21) ) {
+      return ((linkStatus & 0x00000200) != 0);
+    }
     return ((linkStatus & 0x00002000) != 0);
   }
 
   bool isLinkDown(CaloType cType, bool negativeEta, uint32_t cEta, uint32_t iPhi) {
     uint32_t linkStatus = getLinkStatus(cType, negativeEta, cEta, iPhi);
+    if ( cType == EBEE && (cEta==17||cEta==21) ) {
+      return ((linkStatus & 0x00000400) != 0);
+    }
     return ((linkStatus & 0x00004000) != 0);
   }
 
   bool isLinkMasked(CaloType cType, bool negativeEta, uint32_t cEta, uint32_t iPhi) {
     uint32_t linkStatus = getLinkStatus(cType, negativeEta, cEta, iPhi);
+    if ( cType == EBEE && (cEta==17||cEta==21) ) {
+      return ((linkStatus & 0x00000800) != 0);
+    }
     return ((linkStatus & 0x00008000) != 0);
   }
 
   void print() {
     using namespace std;
-    cout << "CTP7 Payload Header:" << endl;
-    cout << "No BX per L1A = " << dec << nBXPerL1A() << endl;
-    cout << "Calo BX ID    = " << dec << caloLinkBXID() << endl;
+    LogError("UCTCTP7RawData") << "CTP7 Payload Header:" << endl;
+    LogError("UCTCTP7RawData") << "No BX per L1A = " << dec << nBXPerL1A() << endl;
+    LogError("UCTCTP7RawData") << "Calo BX ID    = " << dec << caloLinkBXID() << endl;
     CaloType cType = EBEE;
     bool negativeEta = false;
     bool first = true;
@@ -266,9 +277,9 @@ public:
 	for(uint32_t iPhi = 0; iPhi < 4; iPhi++) {
 	  if(getLinkStatus(cType, negativeEta, cEta, iPhi) != 0 ||
 	     getET(cType, negativeEta, cEta, iPhi) != 0) {
-	    if(first) cout << "EcalET FG    LinkStatus" << endl;
+	    if(first) LogError("UCTCTP7RawData") << "EcalET FG    LinkStatus" << endl;
 	    first = false;
-	    cout << dec << setfill(' ') << setw(6) << getET(cType, negativeEta, cEta, iPhi) << "  "
+	    LogError("UCTCTP7RawData") << dec << setfill(' ') << setw(6) << getET(cType, negativeEta, cEta, iPhi) << "  "
 		 << getFB(cType, negativeEta, cEta, iPhi) << "    "
 		 << showbase << internal << setfill('0') << setw(10) << hex << getLinkStatus(cType, negativeEta, cEta, iPhi)
 		 << " (" << dec << getIndex(cType, negativeEta, cEta, iPhi) << ", " << negativeEta << ", " << cEta << ", " << iPhi << ")"
@@ -282,9 +293,9 @@ public:
 	for(uint32_t iPhi = 0; iPhi < 4; iPhi++) {
 	  if(getLinkStatus(cType, negativeEta, cEta, iPhi) != 0 ||
 	     getET(cType, negativeEta, cEta, iPhi) != 0) {
-	    if(first) cout << "HcalET Feature LinkStatus" << endl;
+	    if(first) LogError("UCTCTP7RawData") << "HcalET Feature LinkStatus" << endl;
 	    first = false;
-	    cout << dec << setfill(' ') << setw(6) << getET(cType, negativeEta, cEta, iPhi) << "  "
+	    LogError("UCTCTP7RawData") << dec << setfill(' ') << setw(6) << getET(cType, negativeEta, cEta, iPhi) << "  "
 		 << getFB(cType, negativeEta, cEta, iPhi) << "   "
 		 << showbase << internal << setfill('0') << setw(10) << hex << getLinkStatus(cType, negativeEta, cEta, iPhi)
 		 << " (" << dec << getIndex(cType, negativeEta, cEta, iPhi) << ", " << negativeEta << ", " << cEta << ", " << iPhi << ")"
@@ -299,9 +310,9 @@ public:
 	  if(iPhi == 1 && cEta == 40) cEta = 41;
 	  if(getLinkStatus(cType, negativeEta, cEta, iPhi) != 0 ||
 	     getET(cType, negativeEta, cEta, iPhi) != 0) {
-	    if(first) cout << "HF-ET    Feature LinkStatus" << endl;
+	    if(first) LogError("UCTCTP7RawData") << "HF-ET    Feature LinkStatus" << endl;
 	    first = false;
-	    cout << dec << setfill(' ') << setw(6) << getET(cType, negativeEta, cEta, iPhi) << "  "
+	    LogError("UCTCTP7RawData") << dec << setfill(' ') << setw(6) << getET(cType, negativeEta, cEta, iPhi) << "  "
 		 << dec << setfill(' ') << setw(2) << getHFFeatureBits(negativeEta, cEta, iPhi) << "   "
 		 << showbase << internal << setfill('0') << setw(10) << hex << getLinkStatus(cType, negativeEta, cEta, iPhi)
 		 << " (" << dec << getIndex(cType, negativeEta, cEta, iPhi) << ", " << negativeEta << ", " << cEta << ", " << iPhi << ")"
@@ -311,10 +322,10 @@ public:
       }
       first = true;
       for(uint32_t region = 0; region < 7; region++) {
-	if(first) cout << "Region      ET   EGVeto  TauVeto HitLocation" << endl;
+	if(first) LogError("UCTCTP7RawData") << "Region      ET   EGVeto  TauVeto HitLocation" << endl;
 	first = false;
-	cout << dec << setfill(' ') << setw(6) << region 
-	     << dec << setfill(' ') << setw(8) << getRegionET(negativeEta, region)
+	LogError("UCTCTP7RawData") << dec << setfill(' ') << setw(6) << region
+	     << "  " << hex << showbase << internal << setfill('0') << setw(6) << getRegionET(negativeEta, region) << dec
 	     << "        " << getRegionEGVeto(negativeEta, region)
 	     << "        " << getRegionTauVeto(negativeEta, region)
 	     << "        " << showbase << internal << setfill('0') << setw(3) << hex << getRegionHitLocation(negativeEta, region)

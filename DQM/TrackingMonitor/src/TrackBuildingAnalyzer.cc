@@ -31,6 +31,9 @@ TrackBuildingAnalyzer::TrackBuildingAnalyzer(const edm::ParameterSet& iConfig)
     , NumberOfRecHitsPerSeed(NULL)
     , NumberOfRecHitsPerSeedVsPhiProfile(NULL)
     , NumberOfRecHitsPerSeedVsEtaProfile(NULL)
+    , stoppingSource(NULL)
+    , stoppingSourceVSeta(NULL)
+    , stoppingSourceVSphi(NULL)
 {
 }
 
@@ -114,6 +117,7 @@ void TrackBuildingAnalyzer::initHisto(DQMStore::IBooker & ibooker)
   doNRecHits     = conf_.getParameter<bool>("doSeedNRecHitsHisto");
   doProfPHI      = conf_.getParameter<bool>("doSeedNVsPhiProf");
   doProfETA      = conf_.getParameter<bool>("doSeedNVsEtaProf");
+  doStopSource   = conf_.getParameter<bool>("doStopSource");
   
   //    if (doAllPlots){doAllSeedPlots=true; doTCPlots=true;}
   
@@ -123,7 +127,7 @@ void TrackBuildingAnalyzer::initHisto(DQMStore::IBooker & ibooker)
   // ---------------------------------------------------------------------------------//
   //  std::cout << "[TrackBuildingAnalyzer::beginRun] MEFolderName: " << MEFolderName << std::endl;
   ibooker.setCurrentFolder(MEFolderName+"/TrackBuilding");
-  
+
   if (doAllSeedPlots || doPT) {
     histname = "SeedPt_"+seedProducer.label() + "_";
     SeedPt = ibooker.book1D(histname+CatagoryName, histname+CatagoryName, TrackPtBin, TrackPtMin, TrackPtMax);
@@ -200,6 +204,56 @@ void TrackBuildingAnalyzer::initHisto(DQMStore::IBooker & ibooker)
     NumberOfRecHitsPerSeedVsEtaProfile->setAxisTitle("Seed #eta",1);
     NumberOfRecHitsPerSeedVsEtaProfile->setAxisTitle("Number of RecHits of each Seed",2);
   }
+
+  if (doAllTCPlots || doStopSource) {
+    // DataFormats/TrackReco/interface/TrajectoryStopReasons.h
+    size_t StopReasonNameSize = sizeof(StopReasonName::StopReasonName)/sizeof(std::string);
+    if(StopReasonNameSize != static_cast<unsigned int>(StopReason::SIZE)) {
+      throw cms::Exception("Assert") << "StopReason::SIZE is " << static_cast<unsigned int>(StopReason::SIZE)
+				     << " but StopReasonName's only for "
+				     << StopReasonNameSize
+				     << ". Please update DataFormats/TrackReco/interface/TrajectoryStopReasons.h.";
+    }
+    
+    
+    histname = "StoppingSource_"+seedProducer.label() + "_";
+    stoppingSource = ibooker.book1D(histname+CatagoryName,
+                                    histname+CatagoryName,
+                                    StopReasonNameSize,
+                                    0., double(StopReasonNameSize));
+    stoppingSource->setAxisTitle("stopping reason",1);
+    stoppingSource->setAxisTitle("Number of Tracks",2);
+    
+    histname = "StoppingSourceVSeta_"+seedProducer.label() + "_";
+    stoppingSourceVSeta = ibooker.book2D(histname+CatagoryName,
+                                         histname+CatagoryName,
+                                         EtaBin,
+                                         EtaMin,
+                                         EtaMax,
+                                         StopReasonNameSize,
+                                         0., double(StopReasonNameSize));
+    stoppingSourceVSeta->setAxisTitle("track #eta",1);
+    stoppingSourceVSeta->setAxisTitle("stopping reason",2);
+    
+    histname = "StoppingSourceVSphi_"+seedProducer.label() + "_";
+    stoppingSourceVSphi = ibooker.book2D(histname+CatagoryName,
+                                         histname+CatagoryName,
+                                         PhiBin,
+                                         PhiMin,
+                                         PhiMax,
+                                         StopReasonNameSize,
+                                         0., double(StopReasonNameSize));
+    stoppingSourceVSphi->setAxisTitle("track #phi",1);
+    stoppingSourceVSphi->setAxisTitle("stopping reason",2);
+    
+    for (size_t ibin=0; ibin<StopReasonNameSize; ibin++) {
+      stoppingSource->setBinLabel(ibin+1,StopReasonName::StopReasonName[ibin],1);
+      stoppingSourceVSeta->setBinLabel(ibin+1,StopReasonName::StopReasonName[ibin],2);
+      stoppingSourceVSphi->setBinLabel(ibin+1,StopReasonName::StopReasonName[ibin],2);
+    }
+  }
+  
+
   
   // book the TrackCandidate histograms
   // ---------------------------------------------------------------------------------//
@@ -365,7 +419,16 @@ void TrackBuildingAnalyzer::analyze
   double dxy          = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
   
   double dz           = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
-  
+
+  if (doAllTCPlots || doStopSource) {
+    // stopping source
+    int max = stoppingSource->getNbinsX();
+    double stop = candidate.stopReason() > max ? double(max-1) : static_cast<double>(candidate.stopReason());
+    stoppingSource      ->Fill(stop);
+    stoppingSourceVSeta ->Fill(eta,stop);
+    stoppingSourceVSphi ->Fill(phi,stop);
+  }
+
   if (doTCPlots){
     // fill the ME's
     if (doAllTCPlots) TrackCandQ->Fill( state.charge() );

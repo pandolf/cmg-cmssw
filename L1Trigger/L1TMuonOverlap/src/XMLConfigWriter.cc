@@ -7,6 +7,8 @@
 #include "L1Trigger/L1TMuonOverlap/interface/OMTFResult.h"
 
 #include "L1Trigger/L1TMuonOverlap/interface/AlgoMuon.h"
+#include "DataFormats/L1TMuon/interface/RegionalMuonCand.h"
+
 
 #include <iostream>
 #include <sstream>
@@ -36,6 +38,25 @@ XERCES_CPP_NAMESPACE_USE
 #endif
 //
 
+namespace {
+ unsigned int eta2Bits(unsigned int eta) {
+   if      (eta== 73) return 0b100000000;
+   else if (eta== 78) return 0b010000000;
+   else if (eta== 85) return 0b001000000;
+   else if (eta== 90) return 0b000100000;
+   else if (eta== 94) return 0b000010000;
+   else if (eta== 99) return 0b000001000;
+   else if (eta==103) return 0b000000100;
+   else if (eta==110) return 0b000000010;
+   else if (eta== 75) return 0b110000000;
+   else if (eta== 79) return 0b011000000;
+   else if (eta== 92) return 0b000110000;
+   else if (eta==115) return 0b000000001;
+   else if (eta==121) return 0b000000000;
+   else               return 0b111111111;            ;
+ }
+}
+
 //////////////////////////////////
 // XMLConfigWriter
 //////////////////////////////////
@@ -50,14 +71,15 @@ inline XMLCh*  _toDOMS(std::string temp) {
 }
 ////////////////////////////////////
 ////////////////////////////////////
-XMLConfigWriter::XMLConfigWriter(){
+XMLConfigWriter::XMLConfigWriter(const OMTFConfiguration* aOMTFConfig){
 
   XMLPlatformUtils::Initialize();
   
   ///Initialise XML document
   domImpl = DOMImplementationRegistry::getDOMImplementation(_toDOMS("Range"));   
 
-
+  myOMTFConfig = aOMTFConfig;
+  
 }
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
@@ -66,14 +88,14 @@ void XMLConfigWriter::initialiseXMLDocument(const std::string & docName){
   theDoc = domImpl->createDocument(0,_toDOMS(docName.c_str()), 0);
   theTopElement = theDoc->getDocumentElement();
   
-  unsigned int version = OMTFConfiguration::instance()->fwVersion;
-  unsigned int mask32bits = pow(2,32)-1;
+  unsigned int version = myOMTFConfig->patternsVersion();
+  unsigned int mask16bits = 0xFFFF;
   
-  version &=mask32bits;
+  version &=mask16bits;
   
   std::ostringstream stringStr;
   stringStr.str("");
-  stringStr<<"0x"<<std::hex<<std::setfill('0')<<std::setw(8)<<version;
+  stringStr<<"0x"<<std::hex<<std::setfill('0')<<std::setw(4)<<version;
   theTopElement->setAttribute(_toDOMS("version"), _toDOMS(stringStr.str()));
 
 }
@@ -137,18 +159,25 @@ xercesc::DOMElement * XMLConfigWriter::writeEventHeader(unsigned int eventId,
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
 xercesc::DOMElement * XMLConfigWriter::writeEventData(xercesc::DOMElement *aTopElement,
-						      unsigned int iProcessor,
+                                          const OmtfName & board,
 						      const OMTFinput & aInput){
 
   std::ostringstream stringStr;
 
   xercesc::DOMElement *aProcessor = theDoc->createElement(_toDOMS("Processor"));
+  aProcessor->setAttribute(_toDOMS("board"), _toDOMS(board.name()) );
+
+  unsigned int iProcessor = board.processor(); 
   stringStr.str("");
   stringStr<<iProcessor;
   aProcessor->setAttribute(_toDOMS("iProcessor"), _toDOMS(stringStr.str()));
+  stringStr.str("");
+  if (board.position()==1) stringStr<<"+";
+  stringStr<<board.position(); 
+  aProcessor->setAttribute(_toDOMS("position"), _toDOMS(stringStr.str()));
   
   xercesc::DOMElement *aLayer, *aHit; 
-  for(unsigned int iLayer=0;iLayer<OMTFConfiguration::instance()->nLayers;++iLayer){
+  for(unsigned int iLayer=0;iLayer<myOMTFConfig->nLayers();++iLayer){
     const OMTFinput::vector1D & layerDataPhi = aInput.getLayerData(iLayer);
     const OMTFinput::vector1D & layerDataEta = aInput.getLayerData(iLayer,true);
 
@@ -165,9 +194,9 @@ xercesc::DOMElement * XMLConfigWriter::writeEventData(xercesc::DOMElement *aTopE
       stringStr<<layerDataPhi[iHit];
       aHit->setAttribute(_toDOMS("iPhi"), _toDOMS(stringStr.str()));
       stringStr.str("");
-      stringStr<<layerDataEta[iHit];
+      stringStr<<eta2Bits(abs(layerDataEta[iHit]));
       aHit->setAttribute(_toDOMS("iEta"), _toDOMS(stringStr.str()));
-      if(layerDataPhi[iHit]>=(int)OMTFConfiguration::instance()->nPhiBins) continue;
+      if(layerDataPhi[iHit]>=(int)myOMTFConfig->nPhiBins()) continue;
       aLayer->appendChild(aHit);
     }
     if(aLayer->getChildNodes()->getLength()) aProcessor->appendChild(aLayer);   
@@ -179,7 +208,7 @@ xercesc::DOMElement * XMLConfigWriter::writeEventData(xercesc::DOMElement *aTopE
 }
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
-void  XMLConfigWriter::writeCandidateData(xercesc::DOMElement *aTopElement,
+void  XMLConfigWriter::writeAlgoMuon(xercesc::DOMElement *aTopElement,
 					  unsigned int iRefHit,
 					  const AlgoMuon & aCand){
 
@@ -195,7 +224,7 @@ void  XMLConfigWriter::writeCandidateData(xercesc::DOMElement *aTopElement,
   stringStr<<aCand.getPhi();
   aResult->setAttribute(_toDOMS("phiCode"),_toDOMS(stringStr.str()));
   stringStr.str("");
-  stringStr<<aCand.getEta();
+  stringStr<<eta2Bits(abs(aCand.getEta()));
   aResult->setAttribute(_toDOMS("etaCode"),_toDOMS(stringStr.str()));
   stringStr.str("");
   stringStr<<aCand.getCharge();
@@ -215,9 +244,56 @@ void  XMLConfigWriter::writeCandidateData(xercesc::DOMElement *aTopElement,
   stringStr.str("");
   stringStr<<aCand.getPhiRHit();
   aResult->setAttribute(_toDOMS("phiRHit"),_toDOMS(stringStr.str()));
+  stringStr.str("");
+  stringStr<<aCand.getPatternNumber();
+  aResult->setAttribute(_toDOMS("patNum"),_toDOMS(stringStr.str()));
 
   aTopElement->appendChild(aResult);
 }
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////
+void  XMLConfigWriter::writeCandMuon(xercesc::DOMElement *aTopElement,
+                                const l1t::RegionalMuonCand& aCand){
+
+  xercesc::DOMElement* aResult = theDoc->createElement(_toDOMS("CandMuon"));
+  std::ostringstream stringStr;
+  stringStr.str("");
+  stringStr<<aCand.hwPt();
+  aResult->setAttribute(_toDOMS("hwPt"),_toDOMS(stringStr.str()));
+  stringStr.str("");
+  stringStr<<aCand.hwPhi();
+  aResult->setAttribute(_toDOMS("hwPhi"),_toDOMS(stringStr.str()));
+  stringStr.str("");
+  stringStr<<aCand.hwEta();
+  aResult->setAttribute(_toDOMS("hwEta"),_toDOMS(stringStr.str()));
+  stringStr.str("");
+  stringStr<<aCand.hwSign();
+  aResult->setAttribute(_toDOMS("hwSign"),_toDOMS(stringStr.str()));
+  stringStr.str("");
+  stringStr<<aCand.hwSignValid();
+  aResult->setAttribute(_toDOMS("hwSignValid"),_toDOMS(stringStr.str()));
+  stringStr.str("");
+  stringStr<<aCand.hwQual();
+  aResult->setAttribute(_toDOMS("hwQual"), _toDOMS(stringStr.str()));
+  stringStr.str("");
+  std::map<int, int> hwAddrMap = aCand.trackAddress();
+  stringStr<<std::bitset<29>(hwAddrMap[0]);
+  aResult->setAttribute(_toDOMS("hwTrackAddress"), _toDOMS(stringStr.str()));
+  stringStr.str("");
+  stringStr<<aCand.link();
+  aResult->setAttribute(_toDOMS("link"), _toDOMS(stringStr.str()));
+  stringStr.str("");
+  stringStr<<aCand.processor();
+  aResult->setAttribute(_toDOMS("processor"), _toDOMS(stringStr.str()));
+  stringStr.str("");
+  if      (aCand.trackFinderType() == l1t::omtf_neg) stringStr<<"OMTF_NEG";
+  else if (aCand.trackFinderType() == l1t::omtf_pos) stringStr<<"OMTF_POS";
+  else stringStr<<aCand.trackFinderType();
+  aResult->setAttribute(_toDOMS("trackFinderType"), _toDOMS(stringStr.str()));
+  aTopElement->appendChild(aResult);
+}
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
 void XMLConfigWriter::writeResultsData(xercesc::DOMElement *aTopElement,
@@ -244,7 +320,7 @@ void XMLConfigWriter::writeResultsData(xercesc::DOMElement *aTopElement,
   aGP->setAttribute(_toDOMS("iCharge"), _toDOMS(stringStr.str()));
   /////////////////
   ///Write results details for this GP
-  for(unsigned int iRefLayer=0;iRefLayer<OMTFConfiguration::instance()->nRefLayers;++iRefLayer){
+  for(unsigned int iRefLayer=0;iRefLayer<myOMTFConfig->nRefLayers();++iRefLayer){
     xercesc::DOMElement* aRefLayer = theDoc->createElement(_toDOMS("Result"));
     stringStr.str("");
     stringStr<<iRefLayer;
@@ -253,9 +329,9 @@ void XMLConfigWriter::writeResultsData(xercesc::DOMElement *aTopElement,
     stringStr<<iRegion;
     aRefLayer->setAttribute(_toDOMS("iRegion"), _toDOMS(stringStr.str()));
     stringStr.str("");
-    stringStr<<OMTFConfiguration::instance()->refToLogicNumber[iRefLayer];
+    stringStr<<myOMTFConfig->getRefToLogicNumber()[iRefLayer];
     aRefLayer->setAttribute(_toDOMS("iLogicLayer"), _toDOMS(stringStr.str()));
-    for(unsigned int iLogicLayer=0;iLogicLayer<OMTFConfiguration::instance()->nLayers;++iLogicLayer){
+    for(unsigned int iLogicLayer=0;iLogicLayer<myOMTFConfig->nLayers();++iLogicLayer){
       xercesc::DOMElement* aLayer = theDoc->createElement(_toDOMS("Layer"));
       stringStr.str("");
       stringStr<<iLogicLayer;
@@ -291,7 +367,7 @@ void XMLConfigWriter::writeGPData(const GoldenPattern & aGP){
   stringStr<<aGP.key().theCharge;
   aGPElement->setAttribute(_toDOMS("iCharge"), _toDOMS(stringStr.str()));
 
-  for(unsigned int iLayer = 0;iLayer<OMTFConfiguration::instance()->nLayers;++iLayer){
+  for(unsigned int iLayer = 0;iLayer<myOMTFConfig->nLayers();++iLayer){
     int nOfPhis = 0;
     /////////////////////////////////////
     aLayer = theDoc->createElement(_toDOMS("Layer"));
@@ -302,7 +378,7 @@ void XMLConfigWriter::writeGPData(const GoldenPattern & aGP){
     stringStr.str("");
     stringStr<<nOfPhis;
     aLayer->setAttribute(_toDOMS("nOfPhis"), _toDOMS(stringStr.str()));
-    for(unsigned int iRefLayer=0;iRefLayer<OMTFConfiguration::instance()->nRefLayers;++iRefLayer){
+    for(unsigned int iRefLayer=0;iRefLayer<myOMTFConfig->nRefLayers();++iRefLayer){
       aRefLayer = theDoc->createElement(_toDOMS("RefLayer"));
       int meanDistPhi = aGP.meanDistPhiValue(iLayer,iRefLayer);	       
       stringStr.str("");
@@ -322,8 +398,8 @@ void XMLConfigWriter::writeGPData(const GoldenPattern & aGP){
       aRefLayer->setAttribute(_toDOMS("distMsbPhiShift"), _toDOMS(stringStr.str()));
       aLayer->appendChild(aRefLayer);
     }
-    for(unsigned int iRefLayer=0;iRefLayer<OMTFConfiguration::instance()->nRefLayers;++iRefLayer){
-      for(unsigned int iPdf=0;iPdf<exp2(OMTFConfiguration::instance()->nPdfAddrBits);++iPdf){
+    for(unsigned int iRefLayer=0;iRefLayer<myOMTFConfig->nRefLayers();++iRefLayer){
+      for(unsigned int iPdf=0;iPdf<exp2(myOMTFConfig->nPdfAddrBits());++iPdf){
 	aPdf = theDoc->createElement(_toDOMS("PDF"));
 	stringStr.str("");
 	stringStr<<aGP.pdfValue(iLayer,iRefLayer,iPdf);
@@ -375,7 +451,7 @@ void XMLConfigWriter::writeGPData(const GoldenPattern & aGP1,
     
   aGPElement->setAttribute(_toDOMS("iCharge"), _toDOMS(stringStr.str()));
 
-  for(unsigned int iLayer = 0;iLayer<OMTFConfiguration::instance()->nLayers;++iLayer){
+  for(unsigned int iLayer = 0;iLayer<myOMTFConfig->nLayers();++iLayer){
     int nOfPhis = 0;
     /////////////////////////////////////
     aLayer = theDoc->createElement(_toDOMS("Layer"));
@@ -386,7 +462,7 @@ void XMLConfigWriter::writeGPData(const GoldenPattern & aGP1,
     stringStr.str("");
     stringStr<<nOfPhis;
     aLayer->setAttribute(_toDOMS("nOfPhis"), _toDOMS(stringStr.str()));
-    for(unsigned int iRefLayer=0;iRefLayer<OMTFConfiguration::instance()->nRefLayers;++iRefLayer){
+    for(unsigned int iRefLayer=0;iRefLayer<myOMTFConfig->nRefLayers();++iRefLayer){
       aRefLayer = theDoc->createElement(_toDOMS("RefLayer"));
       int meanDistPhi = aGP1.meanDistPhiValue(iLayer,iRefLayer);	       
 
@@ -413,8 +489,8 @@ void XMLConfigWriter::writeGPData(const GoldenPattern & aGP1,
       aRefLayer->setAttribute(_toDOMS("distMsbPhiShift"), _toDOMS(stringStr.str()));
       aLayer->appendChild(aRefLayer);
     }
-    for(unsigned int iRefLayer=0;iRefLayer<OMTFConfiguration::instance()->nRefLayers;++iRefLayer){
-      for(unsigned int iPdf=0;iPdf<exp2(OMTFConfiguration::instance()->nPdfAddrBits);++iPdf){
+    for(unsigned int iRefLayer=0;iRefLayer<myOMTFConfig->nRefLayers();++iRefLayer){
+      for(unsigned int iPdf=0;iPdf<exp2(myOMTFConfig->nPdfAddrBits());++iPdf){
 	aPdf = theDoc->createElement(_toDOMS("PDF"));
 	stringStr.str("");
 	stringStr<<aGP1.pdfValue(iLayer,iRefLayer,iPdf);
@@ -446,29 +522,27 @@ void  XMLConfigWriter::writeConnectionsData(const std::vector<std::vector <OMTFC
     stringStr.str("");
     stringStr<<iProcessor;
     aProcessorElement->setAttribute(_toDOMS("iProcessor"), _toDOMS(stringStr.str()));
-    for(unsigned int iRefLayer=0;iRefLayer<OMTFConfiguration::instance()->nRefLayers;++iRefLayer){	
+    for(unsigned int iRefLayer=0;iRefLayer<myOMTFConfig->nRefLayers();++iRefLayer){	
 	xercesc::DOMElement* aRefLayerElement = theDoc->createElement(_toDOMS("RefLayer"));
 	stringStr.str("");
 	stringStr<<iRefLayer;
 	aRefLayerElement->setAttribute(_toDOMS("iRefLayer"), _toDOMS(stringStr.str()));	
 	stringStr.str("");
-	stringStr<<OMTFConfiguration::instance()->processorPhiVsRefLayer[iProcessor][iRefLayer];
+	stringStr<<myOMTFConfig->getProcessorPhiVsRefLayer()[iProcessor][iRefLayer];
 	aRefLayerElement->setAttribute(_toDOMS("iGlobalPhiStart"), _toDOMS(stringStr.str()));	
 	aProcessorElement->appendChild(aRefLayerElement);
       }
-    unsigned int iRefHit = 0;
-   
-    /////
+    unsigned int iRefHit = 0;   
     ///////
-      for(unsigned int iRefLayer=0;iRefLayer<OMTFConfiguration::instance()->nRefLayers;++iRefLayer){
+    for(unsigned int iRefLayer=0;iRefLayer<myOMTFConfig->nRefLayers();++iRefLayer){
 	for(unsigned int iRegion=0;iRegion<6;++iRegion){
 	  unsigned int maxHitCount =  0;
 	  for(unsigned int iInput=0;iInput<14;++iInput) {
-	    if((int)maxHitCount<OMTFConfiguration::instance()->measurements4Dref[iProcessor][iRegion][iRefLayer][iInput])
-	      maxHitCount = OMTFConfiguration::instance()->measurements4Dref[iProcessor][iRegion][iRefLayer][iInput];
+	    if((int)maxHitCount<myOMTFConfig->getMeasurements4Dref()[iProcessor][iRegion][iRefLayer][iInput])
+	      maxHitCount = myOMTFConfig->getMeasurements4Dref()[iProcessor][iRegion][iRefLayer][iInput];
 	  }
 	for(unsigned int iInput=0;iInput<14;++iInput){
-	  unsigned int hitCount =  OMTFConfiguration::instance()->measurements4Dref[iProcessor][iRegion][iRefLayer][iInput];
+	  unsigned int hitCount =  myOMTFConfig->getMeasurements4Dref()[iProcessor][iRegion][iRefLayer][iInput];
 	  if(hitCount<maxHitCount*0.1) continue;
 	  xercesc::DOMElement* aRefHitElement = theDoc->createElement(_toDOMS("RefHit"));
 	  stringStr.str("");
@@ -485,10 +559,10 @@ void  XMLConfigWriter::writeConnectionsData(const std::vector<std::vector <OMTFC
 	  stringStr.str("");
 	  stringStr<<iInput;
 	  aRefHitElement->setAttribute(_toDOMS("iInput"), _toDOMS(stringStr.str()));
-	  unsigned int logicRegionSize = 10/360.0*OMTFConfiguration::instance()->nPhiBins;
-	  int lowScaleEnd = std::pow(2,OMTFConfiguration::instance()->nPhiBits-1);
+	  unsigned int logicRegionSize = 10/360.0*myOMTFConfig->nPhiBins();
+	  int lowScaleEnd = std::pow(2,myOMTFConfig->nPhiBits()-1);
 	  ///iPhiMin and iPhiMax are expressed in n bit scale -2**n, +2**2-1 used in each processor
-	  int iPhiMin = OMTFConfiguration::instance()->processorPhiVsRefLayer[iProcessor][iRefLayer]-OMTFConfiguration::instance()->globalPhiStart(iProcessor)-lowScaleEnd;
+	  int iPhiMin = myOMTFConfig->getProcessorPhiVsRefLayer()[iProcessor][iRefLayer]-myOMTFConfig->globalPhiStart(iProcessor)-lowScaleEnd;
 	  int iPhiMax = iPhiMin+logicRegionSize-1;
 
 	  iPhiMin+=iRegion*logicRegionSize;
@@ -501,10 +575,10 @@ void  XMLConfigWriter::writeConnectionsData(const std::vector<std::vector <OMTFC
 	  stringStr.str("");
 	  stringStr<<iPhiMax;
 	  aRefHitElement->setAttribute(_toDOMS("iPhiMax"), _toDOMS(stringStr.str()));
-	  if(iRefHit<OMTFConfiguration::instance()->nRefHits) aProcessorElement->appendChild(aRefHitElement);
+	  if(iRefHit<myOMTFConfig->nRefHits()) aProcessorElement->appendChild(aRefHitElement);
 	  ++iRefHit;
 	}	      
-      for(;iRegion==5 && iRefLayer==7 && iRefHit<OMTFConfiguration::instance()->nRefHits;++iRefHit){
+	for(;iRegion==5 && iRefLayer==7 && iRefHit<myOMTFConfig->nRefHits();++iRefHit){
 	xercesc::DOMElement* aRefHitElement = theDoc->createElement(_toDOMS("RefHit"));
 	stringStr.str("");
 	stringStr<<iRefHit;
@@ -543,13 +617,13 @@ void  XMLConfigWriter::writeConnectionsData(const std::vector<std::vector <OMTFC
 	stringStr<<iRegion;
 	aRegionElement->setAttribute(_toDOMS("iRegion"), _toDOMS(stringStr.str()));   
 
-      for(unsigned int iLogicLayer=0;iLogicLayer<OMTFConfiguration::instance()->nLayers;++iLogicLayer){
+	for(unsigned int iLogicLayer=0;iLogicLayer<myOMTFConfig->nLayers();++iLogicLayer){
 	xercesc::DOMElement* aLayerElement = theDoc->createElement(_toDOMS("Layer"));
 	stringStr.str("");
 	stringStr<<iLogicLayer;
 	////////////////////////////////////////////////
 	aLayerElement->setAttribute(_toDOMS("iLayer"), _toDOMS(stringStr.str()));
-	const OMTFConfiguration::vector1D & myCounts = OMTFConfiguration::instance()->measurements4D[iProcessor][iRegion][iLogicLayer];
+	const OMTFConfiguration::vector1D & myCounts = myOMTFConfig->getMeasurements4D()[iProcessor][iRegion][iLogicLayer];
 	unsigned int maxInput = findMaxInput(myCounts);
 	unsigned int begin = 0, end = 0;
 	if((int)maxInput-2>=0) begin = maxInput-2;

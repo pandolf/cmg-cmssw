@@ -13,11 +13,13 @@
 #include "UCTGeometry.hh"
 #include "UCTLogging.hh"
 
-UCTLayer1::UCTLayer1() : uctSummary(0) {
+using namespace l1tcalo;
+
+UCTLayer1::UCTLayer1(int fwv) : uctSummary(0), fwVersion(fwv) {
   UCTGeometry g;
   crates.reserve(g.getNCrates());
   for(uint32_t crate = 0; crate < g.getNCrates(); crate++) {
-    crates.push_back(new UCTCrate(crate));
+    crates.push_back(new UCTCrate(crate, fwVersion));
   }
 }
 
@@ -35,8 +37,7 @@ bool UCTLayer1::clearEvent() {
 }
 
 const UCTRegion* UCTLayer1::getRegion(int regionEtaIndex, uint32_t regionPhiIndex) const {
-  if(regionEtaIndex == 0 || regionEtaIndex < -7 || regionEtaIndex > 7 ||
-     regionPhiIndex <= 0 || regionPhiIndex >= 19) {
+  if(regionEtaIndex == 0 || (uint32_t) std::abs(regionEtaIndex) > NRegionsInCard || regionPhiIndex >= MaxUCTRegionsPhi) {
     return 0;
   }
   // Get (0,0) tower region information

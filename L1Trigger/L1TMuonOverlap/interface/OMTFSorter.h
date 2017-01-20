@@ -16,37 +16,18 @@ class OMTFSorter{
 
  public:
 
-  /////////////////////////////////////////////////////////////
-  // method not used
-  /////////////////////////////////////////////////////////////
-  ///Sort all processor results.
-  ///First for each region cone find a best candidate using sortRegionResults()
-  ///Then select best candidate amongs found for each logic region.
-  ///The sorting is made for candidates with a given charge
-  // AlgoMuon sortProcessorResults(const std::vector<OMTFProcessor::resultsMap> & procResults,
-  //          int charge=0);
-  //
-  // void sortProcessorResults(const std::vector<OMTFProcessor::resultsMap> & procResults, 
-  //           std::vector<AlgoMuon> & refHitCands,
-	// 		   int charge=0);
-  //  
-  ///Sort all processor results.
-  ///First for each region cone find a best candidate using sortRegionResults()
-  ///Then select best candidate amongs found for each logic region
-  // l1t::RegionalMuonCand sortProcessor(const std::vector<OMTFProcessor::resultsMap> & procResults,
-	// 				int charge=0);
-  /////////////////////////////////////////////////////////////
+  void setNphiBins(unsigned int phiBins) { nPhiBins = phiBins;}
 
   void sortRefHitResults(const std::vector<OMTFProcessor::resultsMap> & procResults,
         std::vector<AlgoMuon> & refHitCleanCands,
         int charge=0);
 
 
-  void sortProcessorAndFillCandidates(unsigned int iProcessor, l1t::tftype mtfType,
-                 const std::vector<AlgoMuon> & algoCands,
-                 l1t::RegionalMuonCandBxCollection & sortedCands,
-                 int bx, int charge=0);
-
+  //convert algo muon to outgoing Candidates
+  //FIXME (MK): nothing to do with sorter, move it from here!
+   std::vector<l1t::RegionalMuonCand> candidates(
+                 unsigned int iProcessor, l1t::tftype mtfType,
+                 const std::vector<AlgoMuon> & algoCands);
 
   ///Sort results from a single reference hit.
   ///Select candidate with highest number of hit layers
@@ -72,6 +53,8 @@ class OMTFSorter{
   ///where sum runs over layers which were hit
   AlgoMuon sortSingleResult(const OMTFResult & aResult);
 
+
+  unsigned int nPhiBins;
 };
 
 #endif

@@ -2,13 +2,13 @@ import FWCore.ParameterSet.Config as cms
 
 caloParamsSource = cms.ESSource(
     "EmptyESSource",
-    recordName = cms.string('L1TCaloParamsRcd'),
+    recordName = cms.string('L1TCaloStage2ParamsRcd'),
     iovIsRunNotTime = cms.bool(True),
     firstValid = cms.vuint32(1)
 )
 
 caloParams = cms.ESProducer(
-    "L1TCaloParamsESProducer",
+    "L1TCaloStage2ParamsESProducer",
 
     # towers
     towerLsbH        = cms.double(0.5),
@@ -35,6 +35,8 @@ caloParams = cms.ESProducer(
     egMaxHcalEt                = cms.double(0.),
     egTrimmingLUTFile          = cms.FileInPath("L1Trigger/L1TCalorimeter/data/egTrimmingLUT_corners.txt"),
     egMaxPtHOverE          = cms.double(128.),
+    egHOverEcutBarrel          = cms.int32(5),
+    egHOverEcutEndcap          = cms.int32(4),
     egMaxHOverE                = cms.double(0.15),
     egMaxHOverELUTFile         = cms.FileInPath("L1Trigger/L1TCalorimeter/data/egMaxHOverELUT.txt"),
     egCompressShapesLUTFile    = cms.FileInPath("L1Trigger/L1TCalorimeter/data/egCompressShapesLUT.txt"),
@@ -59,6 +61,7 @@ caloParams = cms.ESProducer(
     egIsoPUEstTowerGranularity = cms.uint32(1),
     egIsoMaxEtaAbsForTowerSum  = cms.uint32(4),
     egIsoMaxEtaAbsForIsoSum    = cms.uint32(27),
+    egBypassEGVetos            = cms.uint32(0),
 
     # Tau
     tauRegionMask                 = cms.int32(0),
@@ -83,21 +86,28 @@ caloParams = cms.ESProducer(
     tauPUSParams                  = cms.vdouble(1,4,27),
 
     # jets
-    jetRegionMask         = cms.int32(0),
-    jetLsb                = cms.double(0.5),
-    jetSeedThreshold      = cms.double(0.),
-    jetNeighbourThreshold = cms.double(0.),
-    jetPUSType            = cms.string("None"),
-    jetPUSParams          = cms.vdouble(),
-    jetCalibrationType    = cms.string("None"),
-    jetCalibrationParams  = cms.vdouble(),
-    jetCalibrationLUTFile = cms.FileInPath("L1Trigger/L1TCalorimeter/data/jetCalibrationLUT_stage1.txt"),
+    jetRegionMask            = cms.int32(0),
+    jetLsb                   = cms.double(0.5),
+    jetSeedThreshold         = cms.double(0.),
+    jetNeighbourThreshold    = cms.double(0.),
+    jetPUSType               = cms.string("None"),
+    jetCalibrationType       = cms.string("None"),
+    jetCalibrationParams     = cms.vdouble(),
+    jetCompressPtLUTFile     = cms.FileInPath("L1Trigger/L1TCalorimeter/data/lut_pt_compress.txt"),
+    jetCompressEtaLUTFile    = cms.FileInPath("L1Trigger/L1TCalorimeter/data/lut_eta_compress.txt"),
+    jetCalibrationLUTFile    = cms.FileInPath("L1Trigger/L1TCalorimeter/data/lut_add_mult.txt"),
+    jetBypassPUS             = cms.uint32(0),
 
     # sums
-    etSumLsb                = cms.double(0.5),
-    etSumEtaMin             = cms.vint32(-999, -999, -999, -999),
-    etSumEtaMax             = cms.vint32(999,  999,  999,  999),
-    etSumEtThreshold        = cms.vdouble(0.,  0.,   0.,   0.),
+    etSumLsb                 = cms.double(0.5),
+    etSumEtaMin              = cms.vint32(-999, -999, -999, -999),
+    etSumEtaMax              = cms.vint32(999,  999,  999,  999),
+    etSumEtThreshold         = cms.vdouble(0.,  0.,   0.,   0.),
+    etSumXPUSLUTFile         = cms.FileInPath("L1Trigger/L1TCalorimeter/data/lut_etSumPUS_dummy.txt"),
+    etSumYPUSLUTFile         = cms.FileInPath("L1Trigger/L1TCalorimeter/data/lut_etSumPUS_dummy.txt"),
+    etSumEttPUSLUTFile       = cms.FileInPath("L1Trigger/L1TCalorimeter/data/lut_etSumPUS_dummy.txt"),
+    etSumEcalSumPUSLUTFile   = cms.FileInPath("L1Trigger/L1TCalorimeter/data/lut_etSumPUS_dummy.txt"),
+
 
     # HI
     centralityNodeVersion = cms.int32(1),

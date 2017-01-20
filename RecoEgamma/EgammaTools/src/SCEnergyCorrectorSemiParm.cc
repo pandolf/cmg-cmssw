@@ -19,9 +19,7 @@ forestee_(0),
 forestsigmaeb_(0),
 forestsigmaee_(0),
 calotopo_(0),
-calogeom_(0),
-topo_record_(0),
-geom_record_(0)
+calogeom_(0)
 {}
 
 //--------------------------------------------------------------------------------------------------
@@ -49,19 +47,9 @@ void SCEnergyCorrectorSemiParm::setTokens(const edm::ParameterSet &iConfig, edm:
 
 //--------------------------------------------------------------------------------------------------
 void SCEnergyCorrectorSemiParm::setEventSetup(const edm::EventSetup &es) {
-  
-  const CaloTopologyRecord& topofrom_es = es.get<CaloTopologyRecord>();
-  if( !topo_record_ ||
-      topofrom_es.cacheIdentifier() != topo_record_->cacheIdentifier() ) {
-    topo_record_ = &topofrom_es;
-    topo_record_->get(calotopo_);
-  }
-  const CaloGeometryRecord& geomfrom_es = es.get<CaloGeometryRecord>();
-  if( !geom_record_ ||
-      geomfrom_es.cacheIdentifier() != geom_record_->cacheIdentifier() ) {
-    geom_record_ = &geomfrom_es;
-    geom_record_->get(calogeom_);
-  }  
+
+  es.get<CaloTopologyRecord>().get(calotopo_);
+  es.get<CaloGeometryRecord>().get(calogeom_);
 
   edm::ESHandle<GBRForestD> readereb;
   edm::ESHandle<GBRForestD> readerebvar;
@@ -105,8 +93,14 @@ void SCEnergyCorrectorSemiParm::setEvent(const edm::Event &e) {
 }
 
 //--------------------------------------------------------------------------------------------------
-void SCEnergyCorrectorSemiParm::modifyObject(reco::SuperCluster &sc) {
-  
+std::pair<double, double> SCEnergyCorrectorSemiParm::getCorrections(const reco::SuperCluster &sc) const {
+  std::pair<double, double> p;
+  p.first=-1;
+  p.second=-1;
+
+  // protect against HGCal, don't mod the object
+  if( sc.seed()->seed().det() == DetId::Forward ) return p;
+
   const reco::CaloCluster &seedCluster = *(sc.seed());
   const bool iseb = seedCluster.hitsAndFractions()[0].first.subdetId() == EcalBarrel;
   const EcalRecHitCollection *recHits = iseb ? rechitsEB_.product() : rechitsEE_.product();
@@ -245,9 +239,9 @@ void SCEnergyCorrectorSemiParm::modifyObject(reco::SuperCluster &sc) {
     double ecor = mean*(eval[1]);
     const double sigmacor = sigma*ecor;
     
-    sc.setEnergy(ecor);
-    sc.setCorrectedEnergy(ecor);
-    sc.setCorrectedEnergyUncertainty(sigmacor);
+	p.first  = ecor;
+	p.second = sigmacor;
+
   } else {
 
     std::array<float, 7> eval;  
@@ -299,9 +293,21 @@ void SCEnergyCorrectorSemiParm::modifyObject(reco::SuperCluster &sc) {
     double ecor = mean*eval[6];
     if (!iseb)  
       ecor = mean*eval[6]+sc.preshowerEnergy();
+
+	p.first  = ecor;
+	//p.second unchanged 
+  }
+
+  return p;
+}
    
-    sc.setEnergy(ecor);
-    sc.setCorrectedEnergy(ecor);
-  }  
+//--------------------------------------------------------------------------------------------------
+void SCEnergyCorrectorSemiParm::modifyObject(reco::SuperCluster &sc) {
+  
+	std::pair<double, double> cor = getCorrections(sc);
+	if(cor.first<0) return;
+	sc.setEnergy(cor.first);
+	sc.setCorrectedEnergy(cor.first);
+	if(! isHLT_ && cor.second>=0.) sc.setCorrectedEnergyUncertainty(cor.second);
 }
 

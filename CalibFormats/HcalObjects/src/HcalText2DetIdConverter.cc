@@ -118,6 +118,7 @@ bool HcalText2DetIdConverter::init (DetId fId) {
     case HcalZDCDetId::EM: flavorName = "ZDC_EM"; break;
     case HcalZDCDetId::HAD: flavorName = "ZDC_HAD"; break;
     case HcalZDCDetId::LUM: flavorName = "ZDC_LUM"; break;
+    case HcalZDCDetId::RPD: flavorName = "ZDC_RPD"; break;
     default: result = false;
     }
     setField (1, zdcId.zside());
@@ -142,6 +143,16 @@ bool HcalText2DetIdConverter::init (DetId fId) {
       setField (1, calibId.ieta());
       setField (2, calibId.iphi());
       setField (3, -999);
+    } else if (calibId.calibFlavor()==HcalCalibDetId::uMNqie) {
+      flavorName="UMNQIE";
+      setField (1, calibId.channel());
+      setField (2, -999);
+      setField (3, -999);
+    } else if (calibId.calibFlavor()==HcalCalibDetId::CastorRadFacility) {
+      flavorName="CRF";
+      setField (1, calibId.rm());
+      setField (2, calibId.fiber());
+      setField (3, calibId.channel());
     }
   }
   else {
@@ -194,9 +205,11 @@ bool HcalText2DetIdConverter::init (const std::string& fFlavor, const std::strin
 */
   }
   else if (flavorName.find ("ZDC_") == 0) {
-    HcalZDCDetId::Section section = flavorName == "ZDC_EM" ? HcalZDCDetId::EM :
-      flavorName == "ZDC_HAD" ? HcalZDCDetId::HAD : 
-      flavorName == "ZDC_LUM" ? HcalZDCDetId::LUM : HcalZDCDetId::Unknown;
+    HcalZDCDetId::Section section = HcalZDCDetId::Unknown;
+      if(flavorName == "ZDC_EM") section = HcalZDCDetId::EM;
+      else if(flavorName == "ZDC_HAD") section = HcalZDCDetId::HAD;
+      else if(flavorName == "ZDC_LUM") section = HcalZDCDetId::LUM;
+      else if(flavorName == "ZDC_RPD") section = HcalZDCDetId::RPD;
     mId = HcalZDCDetId (section, getField (1)>0, getField (2));
   }
   else if (flavorName.find ("CALIB_") == 0) {
@@ -215,6 +228,16 @@ bool HcalText2DetIdConverter::init (const std::string& fFlavor, const std::strin
     int ieta=getField(1);
     int iphi=getField(2);
     mId = HcalCalibDetId (ieta,iphi);
+  }
+  else if (flavorName=="UMNQIE") {
+    int channel=getField(1);
+    mId = HcalCalibDetId (HcalCalibDetId::uMNqie,channel);
+  }
+  else if (flavorName=="CRF") {
+    int rm=getField(1);
+    int fiber=getField(2);
+    int channel=getField(3);
+    mId = HcalCalibDetId (HcalCalibDetId::CastorRadFacility,rm,fiber,channel);
   }
   else if (flavorName == "NA") {
     mId = HcalDetId::Undefined;

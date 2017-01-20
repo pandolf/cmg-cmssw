@@ -19,7 +19,7 @@
 template<TrackerType pixel_or_strip>
 MonitorTrackResidualsBase<pixel_or_strip>::MonitorTrackResidualsBase(const edm::ParameterSet& iConfig)
    : conf_(iConfig), m_cacheID_(0)
-   , genTriggerEventFlag_(new GenericTriggerEventFlag(iConfig, consumesCollector(), *this))
+   , genTriggerEventFlag_(new GenericTriggerEventFlag(iConfig.getParameter<edm::ParameterSet>("genericTriggerEventPSet"), consumesCollector(), *this))
    , avalidator_(iConfig, consumesCollector()) {
   ModOn = conf_.getParameter<bool>("Mod_On");
   offlinePrimaryVerticesToken_ = consumes<reco::VertexCollection>(std::string("offlinePrimaryVertices"));
@@ -69,7 +69,7 @@ std::pair<std::string, int32_t> MonitorTrackResidualsBase<pixel_or_strip>::findS
 	  break;
 	case 4:
 	  subdet = "TID";
-          layer = tTopo->tidWheel(id) * ( tTopo->tecSide(ModuleID)==1 ? -1 : +1);
+          layer = tTopo->tidWheel(id) * ( tTopo->tidSide(ModuleID)==1 ? -1 : +1);
 	  break;
 	case 5:
 	  subdet = "TOB";

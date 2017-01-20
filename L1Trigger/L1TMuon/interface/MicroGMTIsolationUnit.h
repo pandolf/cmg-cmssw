@@ -7,7 +7,7 @@
 #include "MicroGMTAbsoluteIsolationCheckLUT.h"
 #include "MicroGMTCaloIndexSelectionLUT.h"
 
-#include "CondFormats/L1TObjects/interface/L1TMuonGlobalParams.h"
+#include "L1Trigger/L1TMuon/interface/L1TMuonGlobalParamsHelper.h"
 #include "L1Trigger/L1TMuon/interface/MicroGMTLUTFactories.h"
 
 namespace l1t {
@@ -17,7 +17,7 @@ namespace l1t {
       virtual ~MicroGMTIsolationUnit ();
 
       /// Initialisation from ES record
-      void initialise(L1TMuonGlobalParams*);
+      void initialise(L1TMuonGlobalParamsHelper*);
       // returns the index corresponding to the calo tower sum using the LUT
       int getCaloIndex(MicroGMTConfiguration::InterMuon&) const;
       // copies the energy values to the m_towerEnergies map for consistent access
@@ -50,6 +50,9 @@ namespace l1t {
 
       std::shared_ptr<MicroGMTRelativeIsolationCheckLUT> m_RelIsoCheckMem;
       std::shared_ptr<MicroGMTAbsoluteIsolationCheckLUT> m_AbsIsoCheckMem;
+
+      std::bitset<28> m_caloInputsToDisable;
+      std::bitset<28> m_maskedCaloInputs;
 
       std::vector<int> m_5by1TowerSums;
       std::map<int, int> m_towerEnergies;

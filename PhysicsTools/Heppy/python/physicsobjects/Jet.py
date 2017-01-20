@@ -1,5 +1,6 @@
 from PhysicsTools.Heppy.physicsobjects.PhysicsObject import *
 from PhysicsTools.HeppyCore.utils.deltar import deltaPhi
+from PhysicsTools.Heppy.physicsutils.PuJetIDWP import PuJetIDWP
 import math
 
 loose_WP = [
@@ -33,12 +34,18 @@ _btagWPs = {
     "CMVAT": ("pfCombinedMVABJetTags", 0.813), # for same b-jet efficiency of CSVv2IVFT on ttbar MC, jet pt > 30
     "CMVAv2M": ("pfCombinedMVAV2BJetTags", 0.185), # for same b-jet efficiency of CSVv2IVFM on ttbar MC, jet pt > 30
 ###https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80X
-    "CSVv2IVFL": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.460),
-    "CSVv2IVFM": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.800),
+    "CSVv2IVFL": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.5426),
+    "CSVv2IVFM": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.8484),
     "CSVv2IVFT": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.935),
-    "CMVAv2L": ("pfCombinedMVAV2BJetTags", -0.715), # for same b-jet efficiency of CSVv2IVFL on ttbar MC, jet pt > 30
-    "CMVAv2M": ("pfCombinedMVAV2BJetTags", 0.185),  # for same b-jet efficiency of CSVv2IVFM on ttbar MC, jet pt > 30
-    "CMVAv2T": ("pfCombinedMVAV2BJetTags", 0.875),  # for same b-jet efficiency of CSVv2IVFT on ttbar MC, jet pt > 30
+    #"CSVv2IVFL": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.460),
+    #"CSVv2IVFM": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.800),
+    #"CSVv2IVFT": ("pfCombinedInclusiveSecondaryVertexV2BJetTags", 0.935),
+    "CMVAv2L": ("pfCombinedMVAV2BJetTags", -0.5884), # for same b-jet efficiency of CSVv2IVFL on ttbar MC, jet pt > 30
+    "CMVAv2M": ("pfCombinedMVAV2BJetTags", 0.4432),  # for same b-jet efficiency of CSVv2IVFM on ttbar MC, jet pt > 30
+    "CMVAv2T": ("pfCombinedMVAV2BJetTags", 0.9432),  # for same b-jet efficiency of CSVv2IVFT on ttbar MC, jet pt > 30
+    #    "CMVAv2L": ("pfCombinedMVAV2BJetTags", -0.715), # for same b-jet efficiency of CSVv2IVFL on ttbar MC, jet pt > 30
+    #    "CMVAv2M": ("pfCombinedMVAV2BJetTags", 0.185),  # for same b-jet efficiency of CSVv2IVFM on ttbar MC, jet pt > 30
+    #    "CMVAv2T": ("pfCombinedMVAV2BJetTags", 0.875),  # for same b-jet efficiency of CSVv2IVFT on ttbar MC, jet pt > 30
 
 }
 
@@ -140,19 +147,47 @@ class Jet(PhysicsObject):
             return self.userFloat(label)
         return -99
 
-    def puJetId(self, label="pileupJetId:fullDiscriminant"):
+    def puJetId(self, label="pileupJetId:fullDiscriminant", tuning="80X", wp="loose"):
         '''Full mva PU jet id'''
+        if tuning == '80X':
+            # https://twiki.cern.ch/twiki/bin/view/CMS/PileupJetID#Information_for_13_TeV_data_anal
+            # Note: The following only works for miniAOD v2 - return true
+            #       otherwise
 
-        puMva = self.puMva(label)
-        wp = loose_53X_WP
-        eta = abs(self.eta())
+            # Training only performed up to 50 GeV, return pass above per
+            # recommendation from JME algo subgroup
+            if self.pt() > 50.:
+                return True
+
+            # Return true if miniAOD v1 to avoid throwing in JetAnalyzer
+            if not self.hasUserInt('pileupJetId:fullId'):
+                return True
+
+            pu_id_int = self.userInt('pileupJetId:fullId')
+            if wp == 'loose':
+                return bool(pu_id_int & (1 << 2))
+            elif wp == 'medium':
+                return bool(pu_id_int & (1 << 1))
+            elif wp == 'tight':
+                return bool(pu_id_int & (1 << 0))
+            else:
+                raise RuntimeError('Pileup jet ID: Working point {wp} not supported'.format(wp=wp))
+
+        elif tuning=="76X":
+            puId76X = PuJetIDWP()
+            return puId76X.passWP(self,wp)
+        else:
+            puMva = self.puMva(label)
+            wp = loose_53X_WP
+            eta = abs(self.eta())
+
+            for etamin, etamax, cut in wp:
+                if not(eta>=etamin and eta<etamax):
+                    continue
+                return puMva>cut
         
-        for etamin, etamax, cut in wp:
-            if not(eta>=etamin and eta<etamax):
-                continue
-            return puMva>cut
-        return -99
-        
+            return -99
+                    
     def rawFactor(self):
         return self.jecFactor('Uncorrected') * self._rawFactorMultiplier
 
