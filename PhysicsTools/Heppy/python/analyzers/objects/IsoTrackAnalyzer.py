@@ -129,7 +129,15 @@ class IsoTrackAnalyzer( Analyzer ):
                 event.selectedIsoTrack.append(track)
 
                 if self.cfg_ana.doPrune:
-                    myMet = self.handles['met'].product()[0]
+                    if self.cfg_ana.useCorrectedMET:
+                        if  hasattr(event,'met'):
+                            myMet = event.met
+                        else:
+                            raise RuntimeError, "Cannot use corrected MET: MET object not created yet"
+                    else:
+                        myMet = self.handles['met'].product()[0]
+
+#                   myMet = self.handles['met'].product()[0]
                     mtwIsoTrack = mtw(track, myMet)
                     if mtwIsoTrack < 100:
                         if abs(track.pdgId()) == 11 or abs(track.pdgId()) == 13:
@@ -336,5 +344,7 @@ setattr(IsoTrackAnalyzer,"defaultConfig",cfg.Analyzer(
     ###
     doPrune = True,
     do_mc_match = True, # note: it will in any case try it only on MC, not on data
+    ###
+    useCorrectedMET = False,
   )
 )
