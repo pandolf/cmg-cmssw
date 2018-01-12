@@ -28,6 +28,7 @@ class METAnalyzer( Analyzer ):
     def declareHandles(self):
         super(METAnalyzer, self).declareHandles()
         self.handles['met'] = AutoHandle( self.cfg_ana.metCollection, 'std::vector<pat::MET>' )
+        self.handles['metUncor'] = AutoHandle( self.cfg_ana.metCollection, 'std::vector<pat::MET>' )
 
         if self.cfg_ana.storePuppiExtra:
             self.handles['corX'] = AutoHandle( 'puppiMETEGCor:corX', 'float' )
@@ -60,7 +61,6 @@ class METAnalyzer( Analyzer ):
 
         setattr(met, "upara"+postfix, u1)
         setattr(met, "uperp"+postfix, u2)
-
 
     def makePuppiMETs(self, event):
         chargedPuppi = []
@@ -103,7 +103,6 @@ class METAnalyzer( Analyzer ):
         getattr(event,"puppiMetHF"+self.cfg_ana.collectionPostFix).sumEt = sum([hypot(x[0]*x[2],x[1]*x[2]) for x in hfPuppi])
 
 
-
     def makeTkMETs(self, event):
         charged = []
         chargedchs = []
@@ -116,7 +115,6 @@ class METAnalyzer( Analyzer ):
         doloose=getattr(self.cfg_ana,"includeTkMetPVLoose",False)
         doPVUsedInFit=getattr(self.cfg_ana,"includeTkMetPVUsedInFit",False)
         doNoPV=getattr(self.cfg_ana,"includeTkMetNoPV",False)
-
         pfcands = self.handles['cmgCand'].product()
 
         for pfcand in pfcands:
@@ -132,7 +130,7 @@ class METAnalyzer( Analyzer ):
 
                 if dochs and  pvflag>0:
                     chargedchs.append(pxy)
-
+              
                 ##CHS=loose
                 if doloose and pvflag>=1:
                     chargedPVLoose.append(pxy)
@@ -146,11 +144,9 @@ class METAnalyzer( Analyzer ):
                 if doPVUsedInFit and pvflag >= 3:
                     chargedPVUsedInFit.append(pxy)
 
-
         def sumXY(pxys):
             px, py = sum(x[0] for x in pxys), sum(x[1] for x in pxys)
             return ROOT.reco.Particle.LorentzVector(-px, -py, 0, hypot(px,py))
-
         setattr(event, "tkMet"+self.cfg_ana.collectionPostFix, sumXY(charged))
         setattr(event, "tkMetPVchs"+self.cfg_ana.collectionPostFix, sumXY(chargedchs))
         setattr(event, "tkMetPVLoose"+self.cfg_ana.collectionPostFix, sumXY(chargedPVLoose))
@@ -242,9 +238,11 @@ class METAnalyzer( Analyzer ):
         import ROOT
         if self.cfg_ana.copyMETsByValue:
           self.met = ROOT.pat.MET(self.handles['met'].product()[0])
+          self.metUncor = copy.deepcopy(self.met)
           if self.cfg_ana.doMetNoPU: self.metNoPU = ROOT.pat.MET(self.handles['nopumet'].product()[0])
         else:
           self.met = self.handles['met'].product()[0]
+          self.metUncor = copy.deepcopy(self.met)
           if self.cfg_ana.doMetNoPU: self.metNoPU = self.handles['nopumet'].product()[0]
 
         if self.recalibrateMET == "type1":
@@ -307,6 +305,7 @@ class METAnalyzer( Analyzer ):
 
         if hasattr(event,"met"+self.cfg_ana.collectionPostFix): raise RuntimeError, "Event already contains met with the following postfix: "+self.cfg_ana.collectionPostFix
         setattr(event, "met"+self.cfg_ana.collectionPostFix, self.met)
+        setattr(event, "metUncor"+self.cfg_ana.collectionPostFix, self.metUncor)
         if self.cfg_ana.doMetNoPU: setattr(event, "metNoPU"+self.cfg_ana.collectionPostFix, self.metNoPU)
         setattr(event, "met_sig"+self.cfg_ana.collectionPostFix, self.met_sig)
         setattr(event, "met_sumet"+self.cfg_ana.collectionPostFix, self.met_sumet)
@@ -348,6 +347,8 @@ class METAnalyzer( Analyzer ):
 
 setattr(METAnalyzer,"defaultConfig", cfg.Analyzer(
     class_object = METAnalyzer,
+#    metCollection     = "slimmedMETsMuEGClean",
+#    noPUMetCollection = "slimmedMETsMuEGClean",
     metCollection     = "slimmedMETs",
     noPUMetCollection = "slimmedMETs",
     copyMETsByValue = False,

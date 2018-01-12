@@ -160,8 +160,8 @@ class MT2Analyzer( Analyzer ):
         import array
         import numpy
 
-        objects40jc = [ j for j in event.cleanJets if j.pt() > 40 and abs(j.eta())<2.5 ]
-        objectsXjc = [ j for j in event.cleanJets if j.pt() > self.jetPt and abs(j.eta())<2.5 ]
+        objects40jc = [ j for j in event.cleanJets if j.pt() > 40 and abs(j.eta())<2.4 ]
+        objectsXjc = [ j for j in event.cleanJets if j.pt() > self.jetPt and abs(j.eta())<2.4 ]
 
         setattr(event, "mt2ViaKt"+self.cfg_ana.collectionPostFix+"had", -999)
         setattr(event, "mt2ViaKt"+self.cfg_ana.collectionPostFix+"_Xj_had", -999)
@@ -212,8 +212,8 @@ class MT2Analyzer( Analyzer ):
 
         if self.cfg_comp.isMC and self.met.genMET():
             allGenJets = [ x for x in self.handles['genJets'].product() ] 
-            objects40jc_Gen = [ j for j in allGenJets if j.pt() > 40 and abs(j.eta())<2.5 ]
-            objectsXjc_Gen = [ j for j in allGenJets if j.pt() > self.jetPt and abs(j.eta())<2.5 ]
+            objects40jc_Gen = [ j for j in allGenJets if j.pt() > 40 and abs(j.eta())<2.4 ]
+            objectsXjc_Gen = [ j for j in allGenJets if j.pt() > self.jetPt and abs(j.eta())<2.4 ]
 
             if len(objects40jc_Gen)>=2:
                 self.mt2_gen = self.getMT2Hemi(event,objects40jc_Gen, self.met.genMET(), self.cfg_ana.collectionPostFix, "_gen")
@@ -227,9 +227,9 @@ class MT2Analyzer( Analyzer ):
             
 ## ===> full MT2 (jets + leptons)
                                                                                                                                                                                              
-        objects10lc = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta())<2.5 ]
+        objects10lc = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta())<2.4 ]
         if hasattr(event, 'selectedIsoCleanTrack'):
-            objects10lc = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta())<2.5 ] + [ t for t in event.selectedIsoCleanTrack ]
+            objects10lc = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta())<2.4 ] + [ t for t in event.selectedIsoCleanTrack ]
 
         objects40j10lc = objects40jc + objects10lc
         objects40j10lc.sort(key = lambda obj : obj.pt(), reverse = True)
@@ -239,6 +239,9 @@ class MT2Analyzer( Analyzer ):
 
         setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"", -999)
         setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"_Xj", -999)
+
+        ### MT2 with reco jets and GEN met:
+        setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"_Xj_genmet", -999)
 
         setattr(event, "pseudoJet1"+self.cfg_ana.collectionPostFix+"", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
         setattr(event, "pseudoJet2"+self.cfg_ana.collectionPostFix+"", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
@@ -252,7 +255,10 @@ class MT2Analyzer( Analyzer ):
         if len(objectsXj10lc)>=2:
 
             self.mt2_Xj = self.getMT2Hemi(event,objectsXj10lc,self.met,self.cfg_ana.collectionPostFix,"_Xj") # no postfit since this is the nominal MT2
-
+            ### MT2 with reco jets and GEN met:
+            if self.cfg_comp.isMC and self.met.genMET():
+                self.mt2_Xj_genmet = self.getMT2Hemi(event,objectsXj10lc,self.met.genMET(),self.cfg_ana.collectionPostFix,"_Xj_genmet")
+      
 ## ===> full gamma_MT2
 
         setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"_gamma", -999)
@@ -262,7 +268,7 @@ class MT2Analyzer( Analyzer ):
             
         if hasattr(event, 'gamma_met'):
 
-            gamma_objects40jc = [ j for j in event.gamma_cleanJets if j.pt() > 40 and abs(j.eta())<2.5 ]
+            gamma_objects40jc = [ j for j in event.gamma_cleanJets if j.pt() > 40 and abs(j.eta())<2.4 ]
             
             gamma_objects40j10lc = gamma_objects40jc + objects10lc
             
@@ -279,7 +285,7 @@ class MT2Analyzer( Analyzer ):
             
         if hasattr(event, 'gamma_met'):
 
-            gamma_objectsXjc = [ j for j in event.gamma_cleanJets if j.pt() > self.jetPt and abs(j.eta())<2.5 ]
+            gamma_objectsXjc = [ j for j in event.gamma_cleanJets if j.pt() > self.jetPt and abs(j.eta())<2.4 ]
             
             gamma_objectsXj10lc = gamma_objectsXjc + objects10lc
             
@@ -299,7 +305,7 @@ class MT2Analyzer( Analyzer ):
                 
         if hasattr(event, 'zll_met'):
 
-            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
+            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.4 ]
             
             if len(csLeptons)==2 and len(objects40jc)>=2:
             
@@ -311,7 +317,7 @@ class MT2Analyzer( Analyzer ):
 
         if hasattr(event, 'zll_met'):
 
-            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
+            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.4 ]
             
             if len(csLeptons)==2 and len(objectsXjc)>=2:
             
@@ -325,7 +331,7 @@ class MT2Analyzer( Analyzer ):
 #                
 #        if hasattr(event, 'zllmt_met'):
 #
-#            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
+#            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.4 ]
 #            
 #            if len(csLeptons)==2 and len(objects40jc)>=2:
 #            
@@ -337,7 +343,7 @@ class MT2Analyzer( Analyzer ):
 #
 #        if hasattr(event, 'zllmt_met'):
 #
-#            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
+#            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.4 ]
 #            
 #            if len(csLeptons)==2 and len(objectsXjc)>=2:
 #            
@@ -352,7 +358,7 @@ class MT2Analyzer( Analyzer ):
                 
         if hasattr(event, 'rl_met'):
 
-            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
+            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.4 ]
             
             if len(csLeptons)==1 and len(objects40jc)>=2:
             
@@ -364,7 +370,7 @@ class MT2Analyzer( Analyzer ):
 
         if hasattr(event, 'rl_met'):
 
-            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
+            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.4 ]
             
             if len(csLeptons)==1 and len(objectsXjc)>=2:
             
@@ -379,7 +385,7 @@ class MT2Analyzer( Analyzer ):
                 
         if hasattr(event, 'zllmt_met'):
 
-            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
+            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.4 ]
             
             if len(csLeptons)==2 and len(objects40jc)>=2:
             
@@ -391,7 +397,7 @@ class MT2Analyzer( Analyzer ):
 
         if hasattr(event, 'zllmt_met'):
 
-            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.5 ]
+            csLeptons = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta()) < 2.4 ]
             
             if len(csLeptons)==2 and len(objectsXjc)>=1:
                 
@@ -412,10 +418,10 @@ class MT2Analyzer( Analyzer ):
 #            print 'MT2bb(2b)',event.mt2bb                                                                                                                                                                                                                 
         if len(event.bjetsMedium)==1:
 
-            objects40jcCSV = [ j for j in event.cleanJets if j.pt() > 40 and abs(j.eta())<2.5 and j.p4()!=event.bjetsMedium[0].p4() ]
+            objects40jcCSV = [ j for j in event.cleanJets if j.pt() > 40 and abs(j.eta())<2.4 and j.p4()!=event.bjetsMedium[0].p4() ]
             objects40jcCSV.sort(key = lambda l : l.btag('pfCombinedInclusiveSecondaryVertexV2BJetTags'), reverse = True)
 
-            objectsXjcCSV = [ j for j in event.cleanJets if j.pt() > self.jetPt and abs(j.eta())<2.5 and j.p4()!=event.bjetsMedium[0].p4() ]
+            objectsXjcCSV = [ j for j in event.cleanJets if j.pt() > self.jetPt and abs(j.eta())<2.4 and j.p4()!=event.bjetsMedium[0].p4() ]
             objectsXjcCSV.sort(key = lambda l : l.btag('pfCombinedInclusiveSecondaryVertexV2BJetTags'), reverse = True)
 
             if len(objects40jcCSV)>0:

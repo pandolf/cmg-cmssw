@@ -13,6 +13,9 @@ def printGenParticle(self):
         theStr = '{base}, status = {status:>2}'.format(base=base, status=self.status())
         return theStr
 setattr(ROOT.reco.GenParticle,"__str__",printGenParticle)
+setattr(ROOT.reco.GenParticle,"decayMode",int(0))
+setattr(ROOT.reco.GenParticle,"leadTrackPt",float(0))
+setattr(ROOT.reco.GenParticle,"neutralDaughters",int(0))
 
 #from ROOT.reco import GenParticle   # sometimes doesn't work
 GenParticle = ROOT.reco.GenParticle  # this instead does
