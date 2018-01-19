@@ -130,6 +130,25 @@ class JetCleaner( Analyzer ):
         self.gamma_noIdCleanJetsFwd = [j for j in self.gamma_noIdCleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
         ###
 
+        ##And now for the cleaning from all photons
+        ###
+        gg_photons = [ g for g in event.selectedPhotons ] 
+        self.gg_cleanJetsAll = []
+        self.gg_noIdCleanJetsAll = []
+        if self.cleanFromLepAndGammaSimultaneously:
+            self.gg_cleanJetsAll = cleanNearestJetOnly(jetsEtaCut, gg_photons+leptons, self.jetGammaLepDR)
+            self.gg_noIdCleanJetsAll = cleanNearestJetOnly(event.jetsAllNoID, gg_photons+leptons, self.jetGammaLepDR)
+        else:
+            self.gg_cleanJetsAll = cleanNearestJetOnly(self.cleanJetsAll, gg_photons, self.jetGammaDR)
+            self.gg_noIdCleanJetsAll = cleanNearestJetOnly(self.noIdCleanJetsAll, gg_photons, self.jetGammaDR)
+
+        self.gg_cleanJets    = [j for j in self.gg_cleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+        self.gg_cleanJetsFwd = [j for j in self.gg_cleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
+
+        self.gg_noIdCleanJets    = [j for j in self.gg_noIdCleanJetsAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+        self.gg_noIdCleanJetsFwd = [j for j in self.gg_noIdCleanJetsAll if abs(j.eta()) >= self.cfg_ana.jetEtaCentral ]
+        ###
+
         if self.cfg_ana.alwaysCleanPhotons:
             self.cleanJets = self.gamma_cleanJets
             self.cleanJetsAll = self.gamma_cleanJetsAll
@@ -153,8 +172,16 @@ class JetCleaner( Analyzer ):
             if not self.testJetID( jet ):
                 self.gamma_cleanJetsFailIdAll.append(jet)
 
-        self.gamma_cleanJetsFailId = [j for j in self.gamma_cleanJetsFailIdAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
-        
+        self.gamma_cleanJetsFailId = [j for j in self.gamma_cleanJetsFailIdAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ] 
+
+        ## Jet Id, after jet/photon cleaning
+        self.gg_cleanJetsFailIdAll = []
+        for jet in self.gg_noIdCleanJetsAll:
+            if not self.testJetID( jet ):
+                self.gg_cleanJetsFailIdAll.append(jet)
+
+        self.gg_cleanJetsFailId = [j for j in self.gg_cleanJetsFailIdAll if abs(j.eta()) <  self.cfg_ana.jetEtaCentral ]
+       
         if self.cfg_comp.isMC:
             self.deltaMetFromJetSmearing = [0, 0]
             for j in self.cleanJetsAll:
@@ -188,6 +215,11 @@ class JetCleaner( Analyzer ):
         setattr(event,"gamma_cleanJetsFwd"     +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFwd     ) 
         setattr(event,"gamma_cleanJetsFailIdAll"     +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFailIdAll     ) 
         setattr(event,"gamma_cleanJetsFailId"        +self.cfg_ana.collectionPostFix, self.gamma_cleanJetsFailId        ) 
+        setattr(event,"gg_cleanJetsAll"     +self.cfg_ana.collectionPostFix, self.gg_cleanJetsAll     ) 
+        setattr(event,"gg_cleanJets"        +self.cfg_ana.collectionPostFix, self.gg_cleanJets        ) 
+        setattr(event,"gg_cleanJetsFwd"     +self.cfg_ana.collectionPostFix, self.gg_cleanJetsFwd     ) 
+        setattr(event,"gg_cleanJetsFailIdAll"     +self.cfg_ana.collectionPostFix, self.gg_cleanJetsFailIdAll     ) 
+        setattr(event,"gg_cleanJetsFailId"        +self.cfg_ana.collectionPostFix, self.gg_cleanJetsFailId        ) 
 
 
         if self.cfg_comp.isMC:
