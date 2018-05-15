@@ -95,6 +95,15 @@ class PhotonAnalyzer( Analyzer ):
                 elif abs(gamma.eta()) < 2.3:   gamma.EffectiveArea03 = [ 0.0110, 0.0152, 0.0740 ]
                 elif abs(gamma.eta()) < 2.4:   gamma.EffectiveArea03 = [ 0.0074, 0.0232, 0.0924 ]
                 else:                          gamma.EffectiveArea03 = [ 0.0035, 0.1709, 0.1484 ]
+            elif 'Spring17' in self.cfg_ana.gammaID:
+                # default: values for SPRING17 ID
+                if   abs(gamma.eta()) < 1.0:   gamma.EffectiveArea03 = [ 0.0385, 0.0636, 0.1240  ]
+                elif abs(gamma.eta()) < 1.479: gamma.EffectiveArea03 = [ 0.0468, 0.1103, 0.1093 ]
+                elif abs(gamma.eta()) < 2.0:   gamma.EffectiveArea03 = [ 0.0435, 0.0759, 0.0631 ]
+                elif abs(gamma.eta()) < 2.2:   gamma.EffectiveArea03 = [ 0.0378, 0.0236, 0.0779 ]
+                elif abs(gamma.eta()) < 2.3:   gamma.EffectiveArea03 = [ 0.0338, 0.0151, 0.0999 ]
+                elif abs(gamma.eta()) < 2.4:   gamma.EffectiveArea03 = [ 0.0314, 0.00007, 0.1155 ]
+                else:                          gamma.EffectiveArea03 = [ 0.0269, 0.0132, 0.1373 ]
             else:
                 # default: values for SPRING15_25ns
                 if   abs(gamma.eta()) < 1.0:   gamma.EffectiveArea03 = [ 0.0, 0.0599, 0.1271  ]
@@ -289,7 +298,7 @@ class PhotonAnalyzer( Analyzer ):
         for gamma in event.allphotons:
 
           etaPhot = gamma.eta()
-          phiPhot = gamma.eta()
+          phiPhot = gamma.phi()
           pi = 3.14159
           phiRC = phiPhot + 0.5*pi
           while phiRC>pi:
@@ -362,8 +371,9 @@ setattr(PhotonAnalyzer,"defaultConfig",cfg.Analyzer(
     ptMin = 20,
     etaMax = 2.5,
     # energy scale corrections (off by default)
-    doPhotonScaleCorrections=False, 
+    doPhotonScaleCorrections=False,
     gammaID = "PhotonCutBasedIDLoose_CSA14",
+    #    gammaID = "POG_Spring17_Loose",
     rhoPhoton = 'fixedGridRhoFastjetAll',
     gamma_isoCorr = 'rhoArea',
     # Footprint-removed isolation, removing all the footprint of the photon

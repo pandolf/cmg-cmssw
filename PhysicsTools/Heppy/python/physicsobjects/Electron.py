@@ -39,6 +39,11 @@ class Electron( Lepton ):
         elif id == "POG_MVA_ID_Spring15_NonTrig_VLooseIdEmu":   return self.mvaIDRun2("NonTrigSpring15MiniAOD","VLooseIdEmu")
         elif id == "POG_MVA_ID_Spring15_NonTrig_VLooseIdIsoEmu":   return self.mvaIDRun2("NonTrigSpring15MiniAOD","VLooseIdIsoEmu")
         elif id == "POG_MVA_ID_Spring15_NonTrig_Tight":    return self.mvaIDRun2("NonTrigSpring15MiniAOD","Tight")
+    
+        elif id == "MVA_ID_NonTrig_Spring16_VetoRazor":    return self.mvaIDRun2("Spring16","Veto")
+
+
+        
         elif id == "MVA_ID_NonTrig_Phys14Fix_HZZ":     return self.mvaIDRun2("NonTrigPhys14Fix","HZZ")
         elif id == "MVA_ID_NonTrig_Spring15_HZZ":     return self.mvaIDRun2("NonTrigSpring15MiniAOD","HZZ")
         elif id == "MVA_ID_NonTrig_Spring16_HZZ":     return self.mvaIDRun2("Spring16","HZZ")
@@ -380,7 +385,31 @@ class Electron( Lepton ):
                     smooth_cut = True
                     _vlow = [0.46,-0.03,0.06]
                     _low = [-0.48,-0.67,-0.49]
-                    _high = [-0.85,-0.91,-0.83]
+                    _high = [-0.85,-0.91,-0.83]              
+                elif wp=="Veto": # implementation according to Razor
+                    smooth_cut = True
+                    pt = self.pt()
+
+                    if pt <= 10:
+                        if   eta < 0.8  : return self.mvaRun2(name+'HZZ') >  0.46;
+                        elif eta < 1.479: return self.mvaRun2(name+'HZZ') > -0.03;
+                        else            : return self.mvaRun2(name+'HZZ') >  0.06;
+
+                    elif pt >10 and pt <=15:
+                        if   eta < 0.8  : return self.mvaRun2(name+'GP') > -0.48;
+                        elif eta < 1.479: return self.mvaRun2(name+'GP') > -0.67;
+                        else            : return self.mvaRun2(name+'GP') > -0.49;
+
+                    elif pt >15 and pt <=25:
+                        if   eta < 0.8  : return self.mvaRun2(name+'GP') > -0.48 - ( 0.037*( pt-15.0) );
+                        elif eta < 1.479: return self.mvaRun2(name+'GP') > -0.67 - ( 0.024*( pt-15.0) );
+                        else            : return self.mvaRun2(name+'GP') > -0.49 - ( 0.034*( pt-15.0) );
+
+                    else:
+                        if   eta < 0.8  : return self.mvaRun2(name+'GP') > -0.85;
+                        elif eta < 1.479: return self.mvaRun2(name+'GP') > -0.91;
+                        else            : return self.mvaRun2(name+'GP') > -0.83;
+
                 elif wp=="VLooseIdEmu":
                     smooth_cut = True
                     _vlow = [-0.30,-0.46,-0.63]

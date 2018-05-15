@@ -226,7 +226,7 @@ class MT2Analyzer( Analyzer ):
 
             
 ## ===> full MT2 (jets + leptons)
-                                                                                                                                                                                             
+            
         objects10lc = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta())<2.4 ]
         if hasattr(event, 'selectedIsoCleanTrack'):
             objects10lc = [ l for l in event.selectedLeptons if l.pt() > 10 and abs(l.eta())<2.4 ] + [ t for t in event.selectedIsoCleanTrack ]
@@ -258,7 +258,48 @@ class MT2Analyzer( Analyzer ):
             ### MT2 with reco jets and GEN met:
             if self.cfg_comp.isMC and self.met.genMET():
                 self.mt2_Xj_genmet = self.getMT2Hemi(event,objectsXj10lc,self.met.genMET(),self.cfg_ana.collectionPostFix,"_Xj_genmet")
-      
+
+
+## ===> full hgg_MT2 (2photons removed from jets collection and added as 1 Higgs object to list
+        
+        # setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"_hgg", -999)
+        # setattr(event, "pseudoJet1"+self.cfg_ana.collectionPostFix+"_hgg", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
+        # setattr(event, "pseudoJet2"+self.cfg_ana.collectionPostFix+"_hgg", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
+        
+        # if hasattr(event, 'gg_met'):
+        #     gg_objects40jc = [ j for j in event.gg_cleanJets if j.pt() > 40 and abs(j.eta())<2.5 ]
+        #     gg_objects40j10lc = gg_objects40jc + objects10lc
+        #     gg_objects40j10lc.sort(key = lambda obj : obj.pt(), reverse = True)
+            
+        #     ## if len(gg_objects40j10lc)>=2:
+        #     if len(gg_objects40jc)>=2:
+        #         self.gg_mt2 = self.getMT2Hemi(event,gg_objects40jc,event.gg_met,self.cfg_ana.collectionPostFix,"_hgg")
+
+        setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"_Xj_hgg", -999)
+        setattr(event, "pseudoJet1"+self.cfg_ana.collectionPostFix+"_Xj_hgg", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
+        setattr(event, "pseudoJet2"+self.cfg_ana.collectionPostFix+"_Xj_hgg", ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 ))
+        
+        if hasattr(event, 'met'):
+            hgg_objectsXjc = [ j for j in event.gg_cleanJets if j.pt() > self.jetPt and abs(j.eta())<2.4 ]
+            hgg_objectsXj10lc = hgg_objectsXjc + objects10lc
+
+            photons = []
+            if hasattr(event, 'selectedPhotons'):
+                photons = [ g for g in event.selectedPhotons ] 
+
+            hgg_Lvec = ROOT.reco.Particle.LorentzVector( 0, 0, 0, 0 )
+            if len( photons ) >= 2 :
+                 hgg_Lvec = ROOT.reco.Particle.LorentzVector( photons[0].px(), photons[0].py(), photons[0].pz(), photons[0].energy() ) + ROOT.reco.Particle.LorentzVector( photons[1].px(), photons[1].py(), photons[1].pz(), photons[1].energy() )  
+            
+                 hgg_objectsXj10lc = hgg_objectsXj10lc + [ hgg_Lvec ]
+                 hgg_objectsXj10lc.sort(key = lambda obj : obj.pt(), reverse = True)
+             
+                 if len(hgg_objectsXj10lc)>=2:
+                     self.hgg_mt2_Xj = self.getMT2Hemi(event,hgg_objectsXj10lc,event.met,self.cfg_ana.collectionPostFix,"_Xj_hgg")
+
+
+
+
 ## ===> full gamma_MT2
 
         setattr(event, "mt2"+self.cfg_ana.collectionPostFix+"_gamma", -999)
@@ -269,9 +310,7 @@ class MT2Analyzer( Analyzer ):
         if hasattr(event, 'gamma_met'):
 
             gamma_objects40jc = [ j for j in event.gamma_cleanJets if j.pt() > 40 and abs(j.eta())<2.4 ]
-            
             gamma_objects40j10lc = gamma_objects40jc + objects10lc
-            
             gamma_objects40j10lc.sort(key = lambda obj : obj.pt(), reverse = True)
             
 ##        if len(gamma_objects40j10lc)>=2:
@@ -286,9 +325,7 @@ class MT2Analyzer( Analyzer ):
         if hasattr(event, 'gamma_met'):
 
             gamma_objectsXjc = [ j for j in event.gamma_cleanJets if j.pt() > self.jetPt and abs(j.eta())<2.4 ]
-            
             gamma_objectsXj10lc = gamma_objectsXjc + objects10lc
-            
             gamma_objectsXj10lc.sort(key = lambda obj : obj.pt(), reverse = True)
             
             if len(gamma_objectsXjc)>=2:

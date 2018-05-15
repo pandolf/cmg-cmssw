@@ -153,7 +153,7 @@ class Photon(PhysicsObject ):
         baseWP = re.split('_',name)
         if "looseSieie" in baseWP[-1]: 
             baseWP.pop()
-            WPs["_".join(baseWP)]["sigmaIEtaIEta"] = [0.015,0.035]
+            WPs["_".join(baseWP)]["sigmaIEtaIEta"] = [0.0103,0.0276]
 
         return WPs["_".join(baseWP)]
 
@@ -181,7 +181,8 @@ class Photon(PhysicsObject ):
         passPhotonID = True
 
         if self.CutBasedIDWP(name)["conversionVeto"][idForBarrel]:
-            if (conversionSafe_eleVeto==False and self.physObj.hasPixelSeed()) or (conversionSafe_eleVeto==True and self.physObj.passElectronVeto()==False):
+            if ( self.physObj.passElectronVeto()==False ):
+                #            if (conversionSafe_eleVeto==False and self.physObj.hasPixelSeed()) or (conversionSafe_eleVeto==True and self.physObj.passElectronVeto()==False):
                 passPhotonID = False
 
         if self.CutBasedIDWP(name)["H/E"][idForBarrel] < self.hOVERe():
@@ -211,12 +212,7 @@ class Photon(PhysicsObject ):
                  passPhotonIso = False
              if self.calScaledIsoValueLin(*self.CutBasedIDWP(name)["phoIso"][idForBarrel]) < self.photonIso(isocorr):
                  passPhotonIso = False
-        elif "POG_Spring16" in name:
-             if self.calScaledIsoValueQuadr(*self.CutBasedIDWP(name)["neuHadIso"][idForBarrel]) < self.neutralHadronIso(isocorr):
-                 passPhotonIso = False
-             if self.calScaledIsoValueLin(*self.CutBasedIDWP(name)["phoIso"][idForBarrel]) < self.photonIso(isocorr):
-                 passPhotonIso = False
-        elif "POG_Spring17" in name:
+        elif "POG_Spring16" or "POG_Spring17" in name:
              if self.calScaledIsoValueQuadr(*self.CutBasedIDWP(name)["neuHadIso"][idForBarrel]) < self.neutralHadronIso(isocorr):
                  passPhotonIso = False
              if self.calScaledIsoValueLin(*self.CutBasedIDWP(name)["phoIso"][idForBarrel]) < self.photonIso(isocorr):
