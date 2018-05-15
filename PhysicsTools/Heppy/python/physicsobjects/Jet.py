@@ -108,6 +108,8 @@ class Jet(PhysicsObject):
 
 
     def jetID(self,name=""):
+        if not self.hasPFSpecific():
+            return False
         if not self.isPFJet():
             raise RuntimeError("jetID implemented only for PF Jets")
         eta = abs(self.eta());
@@ -326,6 +328,9 @@ class Jet(PhysicsObject):
 
        if a+b-delta > 0: jet.axis2 = -math.log(math.sqrt(0.5*(a+b-delta)))
        else: jet.axis2 = -1.                                              
+       if a+b+delta > 0: jet.axis1 = -math.log(math.sqrt(0.5*(a+b+delta)))
+       else: jet.axis1 = -1.
+
        return jet	
    
 
